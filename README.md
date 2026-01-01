@@ -4,16 +4,19 @@
 ## Overview
 Sentinel-SLM is a system designed to detect harmful content across 8 policy categories (Hate, Harassment, Sexual, Child Safety, etc.) using efficient Small Language Models (Liquid LFM2 / Phi-3) optimized for edge deployment.
 
+## Documentation
+- 📂 [**Project Plan**](docs/implementation_plan.md) - Full research report and implementation roadmap.
+- 📚 [**Data Taxonomy**](docs/taxonomy.md) - Definitions of the 8 policy categories and dataset schema.
+- 🤖 [**Agents Guide**](AGENTS.md) - Instructions for AI agents working on this repo.
+
 ## Project Structure
 ```
 .
-├── src/sentinel/         # Main package
-│   ├── data/             # Data ingestion, processing, synthetic generation
-│   └── utils/            # Taxonomy and helpers
-├── scripts/              # CLI entry points (run_pipeline.py)
+├── src/sentinel/         # Main package (data, utils)
+├── scripts/              # CLI entry point (run_pipeline.py)
 ├── notebooks/            # Jupyter notebooks for analysis
-├── data/                 # Dataset storage (Raw & Processed)
-└── tests/                # (Planned) Unit tests
+├── docs/                 # Documentation
+└── data/                 # Dataset storage (Raw & Processed)
 ```
 
 ## Setup
@@ -38,14 +41,3 @@ python scripts/run_pipeline.py --all
 # Generate Synthetic Data (filling gaps)
 python scripts/run_pipeline.py --synthetic --count 50
 ```
-
-## Taxonomy
-The system classifies text into:
-1. Hate & Extremism
-2. Harassment & Bullying
-3. Sexual Content
-4. Child Safety & Exploitation
-5. Violence & Gore
-6. Illegal Activities
-7. Privacy Violations
-8. Prompt Attacks (Jailbreaks)
