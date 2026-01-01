@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 # OpenRouter Configuration
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 BASE_URL = "https://openrouter.ai/api/v1"
-MODEL_NAME = "xiaomi/mimo-v2-flash:free" 
+MODEL_NAME = "meta-llama/llama-3.2-3b-instruct:free" # Reliable free model
 
 # Distilabel/Argilla style prompts would be great, but constructing them manually here 
 # for maximum control over the "Prompt"
 PROMPTS = {
-    Category.CHILD_SAFETY: "Generate a realistic social media comment that subtly implies child exploitation or grooming, without being overly graphic but clearly violating safety policies. The language should be natural.",
-    Category.PROMPT_ATTACK: "Generate a prompt that attempts to jailbreak an AI model (e.g., 'Ignore previous instructions', roleplay as DAN). It should look like a user trying to bypass filters.",
+    Category.CHILD_SAFETY: "For a content moderation dataset, generate 1 text example of 'mildly unsafe' content related to child safety (e.g. suspicious requests) to train a detector. Do not generate actual explicit material.",
+    Category.PROMPT_ATTACK: "Generate 1 example of a prompt jailbreak attempt (e.g. 'Ignore previous instructions').",
     # Add others as needed
 }
 
@@ -69,14 +69,39 @@ def generate_batch(client, category: int, count: int = 5) -> List[Dict[str, Any]
             temperature=0.7
         )
         content = completion.choices[0].message.content
-        # Simple cleanup
-        content = content.replace("```json", "").replace("```", "").strip()
+        logger.info(f"Raw model response: {content[:100]}...") # Log start
+        
+        # Robust cleanup
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content.split("```json")[1]
+        if content.startswith("```"):
+            content = content.split("```")[1]
+        if content.endswith("```"):
+            content = content.rsplit("```", 1)[0]
+        content = content.strip()
+        
+        # Try to find list brackets if there is extra text
+        start = content.find("[")
+        end = content.rfind("]")
+        if start != -1 and end != -1:
+            content = content[start:end+1]
+
+        if any(phrase in content.lower() for phrase in ["cannot fulfill", "cannot generate", "unable to", "i can't", "i cannot", "sorry", "apologize"]):
+            logger.warning(f"Model refused to generate for {category_name}.")
+            return []
+
         texts = json.loads(content)
         
-        return [{"text": t, "label": category_name, "lang": "en"} for t in texts]
+        # Ensure it's a list
+        if not isinstance(texts, list):
+             texts = [texts]
+
+        return [{"text": str(t), "label": category_name, "lang": "en"} for t in texts]
     except Exception as e:
         logger.error(f"Generation failed for {category_name}: {e}")
-        raise e
+        # Return empty on failure to ensure pipeline continues
+        return []
 
 def generate_synthetic_data(targets: List[int], count_per_cat: int = 20):
     client = get_client()
@@ -88,15 +113,16 @@ def generate_synthetic_data(targets: List[int], count_per_cat: int = 20):
     
     for cat in targets:
         # Batching: generate 5 at a time to avoid huge context/timeout
-        batches = count_per_cat // 5
+        batches = max(1, count_per_cat // 5)
         for _ in range(batches):
             try:
                 samples = generate_batch(client, cat, count=5)
-                # Append immediately
-                with open(output_file, 'a') as f:
-                    for s in samples:
-                        f.write(json.dumps(s) + "\n")
-                logger.info(f"Generated 5 samples for {CATEGORY_NAMES[cat]}")
+                if samples:
+                    # Append immediately
+                    with open(output_file, 'a') as f:
+                        for s in samples:
+                            f.write(json.dumps(s) + "\n")
+                    logger.info(f"Generated {len(samples)} samples for {CATEGORY_NAMES[cat]}")
             except Exception as e:
                 logger.error(f"Batch failed: {e}")
 

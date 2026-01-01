@@ -152,6 +152,71 @@ def process_jigsaw_clean() -> List[Dict[str, Any]]:
         })
     return processed_data
 
+def process_koala() -> List[Dict[str, Any]]:
+    """Process KoalaAI Multilingual dataset."""
+    path = os.path.join(RAW_DIR, "koala_multilingual.parquet")
+    if not os.path.exists(path):
+        logger.warning(f"Skipping KoalaAI (not found): {path}")
+        return []
+
+    logger.info("Processing KoalaAI...")
+    df = pd.read_parquet(path)
+    processed_data = []
+    
+    rules = MAPPING_RULES["koala"]
+    
+    # Koala columns are 'prompt' (text) and labels 'S', 'H', etc (0/1)
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="KoalaAI"):
+        text = row.get("prompt", "")
+        # Fallback if prompt is missing but text exists
+        if not isinstance(text, str): text = row.get("text", "") 
+        if not text: continue
+        
+        labels = set()
+        is_safe = True
+        
+        for col, cat in rules.items():
+            if col in row and row[col] == 1:
+                labels.add(cat)
+                is_safe = False
+                
+        if is_safe:
+            labels.add(Category.SAFE)
+            
+        processed_data.append({
+            "text": text,
+            "labels": list(labels),
+            "source": "koala_multilingual"
+        })
+    return processed_data
+
+def process_multijail() -> List[Dict[str, Any]]:
+    """Process MultiJail dataset (Multilingual)."""
+    path = os.path.join(RAW_DIR, "multijail.parquet")
+    if not os.path.exists(path):
+        logger.warning(f"Skipping MultiJail (not found): {path}")
+        return []
+    
+    logger.info("Processing MultiJail...")
+    df = pd.read_parquet(path)
+    processed_data = []
+    
+    # Iterate over likely language columns
+    # MultiJail cols: 'en', 'zh', 'it', 'vi', 'ar', 'ko', 'th', 'bn', 'sw', 'jv'
+    # We will try to grab all string columns that look like prompts
+    
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="MultiJail"):
+        for col in df.columns:
+            text = row[col]
+            if isinstance(text, str) and len(text) > 5:
+                processed_data.append({
+                    "text": text,
+                    "labels": [Category.PROMPT_ATTACK],
+                    "source": "damo_multijail"
+                })
+                
+    return processed_data
+
 def map_all_raw_data() -> pd.DataFrame:
     """Processing pipeline for all raw data."""
     all_data = []
@@ -159,6 +224,8 @@ def map_all_raw_data() -> pd.DataFrame:
     all_data.extend(process_jailbreak())
     all_data.extend(process_civil_comments())
     all_data.extend(process_jigsaw_clean())
+    all_data.extend(process_koala())
+    all_data.extend(process_multijail())
     
     if not all_data:
         logger.warning("No data processed.")
@@ -211,13 +278,14 @@ def merge_synthetic(df_main: pd.DataFrame) -> pd.DataFrame:
         df_synth = pd.DataFrame(synth_data)
         df_final = pd.concat([df_main, df_synth], ignore_index=True)
         logger.info(f"Added {len(df_synth)} synthetic samples.")
-        
-        final_path = os.path.join(PROCESSED_DIR, "final_augmented_dataset.parquet")
-        df_final.to_parquet(final_path)
-        logger.info(f"Saved Final Augmented Dataset: {len(df_final)} samples to {final_path}")
-        return df_final
+    else:
+        logger.info("No synthetic data found (or empty). Using main dataset only.")
+        df_final = df_main
     
-    return df_main
+    final_path = os.path.join(PROCESSED_DIR, "final_augmented_dataset.parquet")
+    df_final.to_parquet(final_path)
+    logger.info(f"Saved Final Augmented Dataset: {len(df_final)} samples to {final_path}")
+    return df_final
 
 if __name__ == "__main__":
     df = map_all_raw_data()

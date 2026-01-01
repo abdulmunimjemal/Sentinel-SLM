@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = os.getcwd()
 RAW_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
 
+# Load auth
+from dotenv import load_dotenv
+load_dotenv()
+HF_TOKEN = os.getenv("HF_TOKEN")
+
 def ensure_dir(path: str) -> None:
     """Ensure that the directory exists."""
     os.makedirs(path, exist_ok=True)
@@ -36,11 +41,12 @@ def download_beavertails(split: str = "train") -> None:
 
     logger.info("Downloading BeaverTails (30k)...")
     try:
-        ds = load_dataset("PKU-Alignment/beaver-tails-evaluation", split="30k_train")
+        # User confirmed ID: PKU-Alignment/BeaverTails
+        ds = load_dataset("PKU-Alignment/BeaverTails", split="30k_train", token=HF_TOKEN)
         ds.to_parquet(path)
         logger.info(f"Saved to {path}")
     except Exception as e:
-        logger.error(f"Failed to download BeaverTails: {e}")
+        logger.warning(f"Skipping BeaverTails (Auth/Access required): {e}")
 
 def download_jailbreak() -> None:
     """Download JailbreakBench dataset."""
@@ -52,9 +58,19 @@ def download_jailbreak() -> None:
 
     logger.info("Downloading JailbreakBench...")
     try:
-        ds = load_dataset("JailbreakBench/JBB-Behaviors", split="train")
-        ds.to_parquet(path)
-        logger.info(f"Saved to {path}")
+        from datasets import concatenate_datasets
+        # Splits are 'harmful' and 'benign'
+        ds_harmful = load_dataset("JailbreakBench/JBB-Behaviors", "behaviors", split="harmful")
+        ds_benign = load_dataset("JailbreakBench/JBB-Behaviors", "behaviors", split="benign")
+        
+        # Add type column to distinguish
+        ds_harmful = ds_harmful.add_column("type", ["jailbreak"] * len(ds_harmful))
+        ds_benign = ds_benign.add_column("type", ["benign"] * len(ds_benign))
+        
+        # Concatenate
+        ds_combined = concatenate_datasets([ds_harmful, ds_benign])
+        ds_combined.to_parquet(path)
+        logger.info(f"Saved to {path} (Combined {len(ds_combined)} samples)")
     except Exception as e:
         logger.error(f"Failed to download JailbreakBench: {e}")
 
@@ -97,12 +113,49 @@ def download_jigsaw_clean() -> None:
     except Exception as e:
         logger.warning(f"Failed to download Jigsaw: {e}")
 
+def download_koala() -> None:
+    """Download KoalaAI Multilingual Moderation dataset."""
+    ensure_dir(RAW_DATA_DIR)
+    path = os.path.join(RAW_DATA_DIR, "koala_multilingual.parquet")
+    if os.path.exists(path):
+        logger.info(f"KoalaAI already exists at {path}")
+        return
+
+    logger.info("Downloading KoalaAI Multilingual...")
+    try:
+        # Check if train split is available, usually 'train'
+        ds = load_dataset("KoalaAI/Text-Moderation-Multilingual", split="train")
+        ds.to_parquet(path)
+        logger.info(f"Saved to {path}")
+    except Exception as e:
+        logger.error(f"Failed to download KoalaAI: {e}")
+
+def download_multijail() -> None:
+    """Download MultiJail dataset (Multilingual Jailbreaks)."""
+    ensure_dir(RAW_DATA_DIR)
+    path = os.path.join(RAW_DATA_DIR, "multijail.parquet")
+    if os.path.exists(path):
+        logger.info(f"MultiJail already exists at {path}")
+        return
+
+    logger.info("Downloading MultiJail...")
+    try:
+        # DAMO-NLP-SG/MultiJail usually loads as CSV/Text. 
+        # It's small so we can load 'train'.
+        ds = load_dataset("DAMO-NLP-SG/MultiJail", split="train")
+        ds.to_parquet(path)
+        logger.info(f"Saved to {path}")
+    except Exception as e:
+        logger.error(f"Failed to download MultiJail: {e}")
+
 def download_all() -> None:
     """Download all required datasets."""
     download_beavertails()
     download_jailbreak()
     download_civil_comments()
     download_jigsaw_clean()
+    download_koala()
+    download_multijail()
 
 if __name__ == "__main__":
     download_all()

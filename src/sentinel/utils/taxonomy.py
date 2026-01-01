@@ -54,5 +54,15 @@ MAPPING_RULES = {
         "insult": Category.HARASSMENT,
         "identity_attack": Category.HATE_EXTREMISM,
         "sexual_explicit": Category.SEXUAL
+    },
+    "koala": {
+        "S": Category.SEXUAL,
+        "H": Category.HATE_EXTREMISM,
+        "V": Category.VIOLENCE,
+        "HR": Category.HARASSMENT,
+        "SH": Category.VIOLENCE, # Self-harm
+        "S3": Category.CHILD_SAFETY, # Sexual/Minors
+        "H2": Category.HATE_EXTREMISM,
+        "V2": Category.VIOLENCE
     }
 }
