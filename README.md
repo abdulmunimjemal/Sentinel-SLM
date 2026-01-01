@@ -124,8 +124,3 @@ Sentinel-SLM/
 This project is built for the open-source community. We prioritize:
 1.  **Code Quality**: Type hints, docstrings, and modular design.
 2.  **Safety**: Rigorous handling of sensitive content (red-teaming).
-
----
-
-**Author**: Abdulmunim Jundur Rahman
-**Status**: Data Preparation Complete / Ready for Training (Phase 2)
