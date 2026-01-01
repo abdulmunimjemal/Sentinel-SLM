@@ -59,7 +59,7 @@ The Sentinel-SLM dataset is a massive aggregation of SOTA open-source datasets, 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/Sentinel-SLM.git
+git clone https://github.com/abdulmunimjemal/Sentinel-SLM.git
 cd Sentinel-SLM
 
 # Setup Virtual Environment
