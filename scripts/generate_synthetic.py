@@ -20,8 +20,8 @@ client = OpenAI(
 )
 
 MODELS = [
-    "meta-llama/llama-3-8b-instruct:free",
-    "mistralai/mistral-24b-instruct:free"
+    "xiaomi/mimo-v2-flash:free",
+    "meta-llama/llama-3.2-3b-instruct:free" # Fallback
 ]
 
 def generate_samples(category, language="English", count=5, model_idx=0):

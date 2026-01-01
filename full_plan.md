@@ -15,8 +15,9 @@ We will download and standardize these reputable datasets first.
 | :--- | :--- | :--- |
 | **BeaverTails** | High | Sexual, Child Safety, Illegal, Privacy, Violence |
 | **Jigsaw Toxic Severity** | High | Hate, Harassment, Sexual, Violence |
+| **Civil Comments** | High | Harassment (Massive scale), Hate |
+| **Jigsaw Clean** | High | Hate, Harassment, Sexual, Violence |
 | **JailbreakBench** | Medium | Prompt Attack (Category 8) |
-| **XNLI / TweetEval** | Low | Multilingual Hate (if needed) |
 
 **Script**: `scripts/download_data.py` (Ready to run)
 - Action: Downloads datasets via Hugging Face `datasets` library.

@@ -5,3 +5,7 @@ openai
 python-dotenv
 scikit-learn
 tqdm
+ipykernel
+notebook
+distilabel
+tenacity

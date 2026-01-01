@@ -107,10 +107,81 @@ def process_jailbreak():
         
     return processed_data
 
+def process_civil_comments():
+    path = os.path.join(RAW_DIR, "civil_comments_sample.parquet")
+    if not os.path.exists(path):
+        print(f"Skipping Civil Comments (not found): {path}")
+        return []
+
+    print("Processing Civil Comments...")
+    df = pd.read_parquet(path)
+    processed_data = []
+    
+    rules = MAPPING_RULES["civil_comments"]
+    
+    for _, row in tqdm(df.iterrows(), total=len(df)):
+        text = row.get("text", "")
+        labels = set()
+        
+        # Civil Comments usually has float scores 0.0-1.0
+        # Threshold typically 0.5
+        is_safe = True
+        
+        for col, cat in rules.items():
+            if col in row and row[col] >= 0.5:
+                labels.add(cat)
+                is_safe = False
+                
+        if is_safe:
+            labels.add(Category.SAFE)
+            
+        processed_data.append({
+            "text": text,
+            "labels": list(labels),
+            "source": "civil_comments"
+        })
+    return processed_data
+
+def process_jigsaw_clean():
+    path = os.path.join(RAW_DIR, "jigsaw_clean.parquet")
+    if not os.path.exists(path):
+        print(f"Skipping Jigsaw Clean (not found): {path}")
+        return []
+
+    print("Processing Jigsaw Clean...")
+    df = pd.read_parquet(path)
+    processed_data = []
+    
+    rules = MAPPING_RULES["jigsaw_clean"]
+    
+    for _, row in tqdm(df.iterrows(), total=len(df)):
+        # Usually 'comment_text'
+        text = row.get("comment_text", row.get("text", ""))
+        labels = set()
+        is_safe = True
+        
+        for col, cat in rules.items():
+            # Jigsaw often has 0/1 ints or floats
+            if col in row and row[col] >= 0.5:
+                labels.add(cat)
+                is_safe = False
+                
+        if is_safe:
+            labels.add(Category.SAFE)
+            
+        processed_data.append({
+            "text": text,
+            "labels": list(labels),
+            "source": "jigsaw_clean"
+        })
+    return processed_data
+
 def main():
     all_data = []
     all_data.extend(process_beavertails())
     all_data.extend(process_jailbreak())
+    all_data.extend(process_civil_comments())
+    all_data.extend(process_jigsaw_clean())
     
     if not all_data:
         print("No data processed.")
@@ -125,7 +196,6 @@ def main():
     print(f"Saved {len(df)} samples to {out_path}")
     print("Sample distribution:")
     # Simple count of how many samples have each category
-    # explode labels
     exploded = df.explode("labels")
     print(exploded["labels"].value_counts().rename(index=CATEGORY_NAMES))
 
