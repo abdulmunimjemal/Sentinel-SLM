@@ -1,4 +1,7 @@
-# Sentinel-SLM: Multilingual Content Moderation & Guardrails
+<div align="center">
+  <img src="assets/logo.png" alt="Sentinel-SLM Logo" width="200"/>
+  <h1>Sentinel-SLM: Multilingual Content Moderation & Guardrails</h1>
+</div>
 
 > **Safety for the Open Web.**
 > A robust, open-source SLM (Small Language Model) specialized in multilingual toxicity detection, jailbreak categorization, and safety guardrails.
