@@ -44,13 +44,17 @@ Multi-label classification scheme (ids `0` to `8`):
 ### Statistics
 
 -   **Input Length**: Mean ~123 characters. Tail extends to 4k+.
--   **Multilingualism**:
-    -   English: ~29%
-    -   Russian: ~5%
-    -   Ukrainian: ~4.7%
-    -   Japanese: ~4.6%
-    -   Chinese: ~4.6%
-    -   (Followed by German, Spanish, Italian, Korean, French at >4% each).
+-   **Multilingualism** (Enriched Analysis):
+    -   **English**: 486,078 (~29%)
+    -   **Russian**: 85,976 (~5.1%)
+    -   **Ukrainian**: 78,868 (~4.7%)
+    -   **Japanese**: 77,437 (~4.6%)
+    -   **Chinese**: 77,428 (~4.6%)
+    -   **German**: 75,967 (~4.5%)
+    -   **Spanish**: 74,908
+    -   **Italian**: 73,274
+    -   **Korean**: 73,247
+    -   **French**: 72,999
 
 ---
 
