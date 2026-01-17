@@ -9,3 +9,8 @@ ipykernel
 notebook
 distilabel
 tenacity
+matplotlib
+seaborn
+langdetect
+matplotlib
+seaborn
