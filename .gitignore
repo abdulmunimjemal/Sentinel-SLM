@@ -1,4 +1,34 @@
 .venv/
-/data/
 __pycache__/
-*.env
+*.py[cod]
+*$py.class
+*.so
+.DS_Store
+
+# Environments
+.env
+.env.local
+.venv
+env/
+venv/
+ENV/
+
+# Data
+data/raw/
+data/processed/
+*.parquet
+*.csv
+*.jsonl
+
+# Models
+models/
+*.pt
+*.pth
+*.bin
+*.safetensors
+wandb/
+
+# IDEs
+.vscode/
+.idea/
+*.ipynb_checkpoints/

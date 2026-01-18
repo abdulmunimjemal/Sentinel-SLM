@@ -12,5 +12,9 @@ tenacity
 matplotlib
 seaborn
 langdetect
+peft
+accelerate
+evaluate
+scikit-learn
 matplotlib
 seaborn
