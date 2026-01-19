@@ -17,8 +17,8 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 # --- Configuration ---
 MODEL_ID = "LiquidAI/LFM2-350M"
-DATA_PATH = "data/processed/rail_a_jailbreak.parquet"
-OUTPUT_DIR = "models/rail_a_v1"
+DATA_PATH = "data/processed/rail_a_clean.parquet"
+OUTPUT_DIR = "models/rail_a_v3"
 MAX_LENGTH = 512
 BATCH_SIZE = 8
 EPOCHS = 3

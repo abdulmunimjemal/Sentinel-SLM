@@ -38,14 +38,17 @@ def get_client():
         raise ValueError("OPENROUTER_API_KEY not set.")
     return OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
-@retry(stop=stop_after_attempt(5), wait=wait_fixed(5)) # Wait 5s between retries (conservative for 20RPM)
-def generate_batch(client, category: int, count: int = 5) -> List[Dict[str, Any]]:
+@retry(stop=stop_after_attempt(5), wait=wait_fixed(5)) 
+def generate_batch(client, category: int, count: int = 5, custom_prompt: str = None) -> List[Dict[str, Any]]:
     """
     Generate a batch of synthetic samples for a category.
-    Uses basic chat completion for now to respect rate limits strictly.
     """
     category_name = CATEGORY_NAMES[category]
-    prompt_desc = PROMPTS.get(category, f"Generate a text example of {category_name}.")
+    # Use custom prompt if provided, else fallback to default logic
+    if custom_prompt:
+        prompt_desc = custom_prompt
+    else:
+        prompt_desc = PROMPTS.get(category, f"Generate a text example of {category_name}.")
     
     system_prompt = (
         "You are an expert red-teamer generating dataset samples for content moderation.\n"

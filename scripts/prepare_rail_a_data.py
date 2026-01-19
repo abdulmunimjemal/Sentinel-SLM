@@ -1,85 +1,107 @@
+#!/usr/bin/env python3
+"""
+Prepare Rail A Dataset from Main Sentinel Dataset
+
+This script extracts prompt injection samples (Category 8) from the main
+unified Sentinel dataset and balances them with safe samples (Category 0).
+
+Use this when you want to leverage the main dataset (which includes 
+BeaverTails, Jigsaw, etc.) rather than downloading external sources.
+
+Input:
+    data/processed/final_augmented_dataset_enriched.parquet
+    (or data/processed/final_augmented_dataset.parquet)
+
+Output:
+    data/processed/rail_a_jailbreak.parquet
+
+Label Convention:
+    0 = Safe (benign prompts)
+    1 = Attack (prompt injection/jailbreak)
+
+Usage:
+    python scripts/prepare_rail_a_data.py
+
+Author: Sentinel-SLM Team
+"""
+
 import pandas as pd
 import numpy as np
 import os
 import sys
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 sys.path.append(os.getcwd())
 from src.sentinel.utils.taxonomy import Category
 
-def prepare_rail_a(input_path, output_path, seed=42):
-    print(f"Loading from {input_path}...")
+
+def prepare_rail_a(input_path: str, output_path: str, seed: int = 42) -> None:
+    """
+    Prepare Rail A dataset by extracting attacks and balancing with safe samples.
+    
+    Args:
+        input_path: Path to the source dataset (enriched or base)
+        output_path: Path to save the output dataset
+        seed: Random seed for reproducibility
+    """
+    logger.info(f"Loading from {input_path}...")
     try:
         df = pd.read_parquet(input_path)
     except FileNotFoundError:
-        print(f"Error: File {input_path} not found.")
+        logger.error(f"File {input_path} not found.")
         return
 
-    # 1. Extract Attacks (Category 8)
-    # Using the same robust list length check logic as the inspection script
+    # 1. Extract Attacks (Category 8 - PROMPT_ATTACK)
     attack_mask = df['labels'].apply(lambda x: Category.PROMPT_ATTACK.value in x)
     attacks_df = df[attack_mask].copy()
     num_attacks = len(attacks_df)
-    print(f"Found {num_attacks} Prompt Attacks (Category 8).")
+    logger.info(f"Found {num_attacks} Prompt Attacks (Category 8).")
     
-    # 2. Extract Safe (Category 0)
-    # Strict definition: Only label 0, no multi-labels
+    # 2. Extract Safe (Category 0 only, no multi-labels)
     safe_mask = df['labels'].apply(lambda x: len(x) == 1 and x[0] == Category.SAFE.value)
     candidates_safe_df = df[safe_mask]
-    print(f"Found {len(candidates_safe_df)} Safe candidates.")
+    logger.info(f"Found {len(candidates_safe_df)} Safe candidates.")
 
-    # 3. Sample Safe to balance (1:1 ratio typically, or slightly more safe to prevent False Positives)
-    # Let's go for 1.1x Safe to be slightly conservative
+    # 3. Sample Safe to balance (1.1x ratio - slightly more safe to prevent False Positives)
     target_safe = int(num_attacks * 1.1)
     
-    # Stratified sampling by language if 'lang' exists, otherwise random
     if 'lang' in candidates_safe_df.columns:
-        print(f"Sampling {target_safe} Safe examples (Language Balanced)...")
-        # Try to match the language distribution of attacks?
-        # Actually, for the negative class, we want it to represent "Normal usage" across languages.
-        # So we should sample proportionally to the languages present in the attacks if possible, 
-        # OR just sample broadly from all languages to ensure the model doesn't associate "Arabic" with "Attack".
-        # Better strategy: Sample Safe examples roughly proportionally to their occurrence in the enriched dataset 
-        # BUT ensuring we cover the languages found in the Attack dataset.
-        
-        # Simpler robust approach for now: Random sample. FastText `lang` will ensure we know what we got.
-        # Additional thought: If we have 300 Arabic attacks, we MUST have Safe Arabic text, otherwise 
-        # the model might learn "Arabic script = Attack".
-        
-        # Let's verify overlapping languages
+        logger.info(f"Sampling {target_safe} Safe examples (Language-aware)...")
         attack_langs = set(attacks_df['lang'].unique())
-        print(f"Attack Languages: {len(attack_langs)}")
-        
-        # Filter safe candidates to only those languages present in attacks + 'en' (always keep en)
-        # This prevents training on languages that are irrelevant to the attack surface defined so far,
-        # though arguably "Safe" should be universal. 
-        # Let's just do a weighted sample to prioritize languages that appear in attacks.
-        
-        # Implementation: Just random sample for now to keep it simple and robust, 
-        # assuming the 1M+ safe set covers most languages.
+        logger.info(f"Attack dataset has {len(attack_langs)} languages")
         safe_df = candidates_safe_df.sample(n=target_safe, random_state=seed).copy()
-        
     else:
-        print(f"Sampling {target_safe} Safe examples (Random)...")
+        logger.info(f"Sampling {target_safe} Safe examples (Random)...")
         safe_df = candidates_safe_df.sample(n=target_safe, random_state=seed).copy()
 
-    # 4. Labeling for Binary Classification
-    # Attack = 1, Safe = 0
+    # 4. Labeling for Binary Classification (Attack=1, Safe=0)
     attacks_df['target'] = 1
     safe_df['target'] = 0
     
-    # 5. Merge
+    # 5. Merge and shuffle
     final_df = pd.concat([attacks_df, safe_df])
-    # Shuffle
     final_df = final_df.sample(frac=1, random_state=seed).reset_index(drop=True)
     
-    print(f"\n--- Final Rail A Dataset ---")
-    print(f"Total: {len(final_df)}")
-    print(final_df['target'].value_counts())
+    # Report statistics
+    logger.info("\n" + "=" * 50)
+    logger.info("FINAL RAIL A DATASET")
+    logger.info("=" * 50)
+    logger.info(f"Total: {len(final_df)}")
+    logger.info(f"\nBy target (0=Safe, 1=Attack):")
+    logger.info(f"{final_df['target'].value_counts().to_string()}")
     
     # Save
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     final_df.to_parquet(output_path)
-    print(f"Saved to {output_path}")
+    logger.info(f"\nSaved to {output_path}")
 
 if __name__ == "__main__":
     IN_FILE = "data/processed/final_augmented_dataset_enriched.parquet"
