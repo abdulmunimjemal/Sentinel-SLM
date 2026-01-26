@@ -1,0 +1,21 @@
+{
+  "model_id": "LiquidAI/LFM2-350M",
+  "data_path": "data/processed/rail_a_clean.parquet",
+  "output_dir": "models/rail_a_v3",
+  "max_length": 384,
+  "batch_size": 8,
+  "epochs": 3,
+  "learning_rate": 0.0002,
+  "random_seed": 42,
+  "eval_split": 0.2,
+  "weight_decay": 0.01,
+  "gradient_accumulation_steps": 2,
+  "warmup_ratio": 0.03,
+  "lora": {
+    "r": 16,
+    "lora_alpha": 32,
+    "target_modules": ["out_proj", "v_proj", "q_proj", "k_proj"],
+    "lora_dropout": 0.1,
+    "bias": "none"
+  }
+}

@@ -21,10 +21,13 @@ Label Convention:
 
 Usage:
     python scripts/prepare_rail_a_data.py
+    python scripts/prepare_rail_a_data.py --input data/processed/final_augmented_dataset.parquet \
+        --output data/processed/rail_a_jailbreak.parquet --safe-ratio 1.1 --seed 42
 
 Author: Sentinel-SLM Team
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -40,7 +43,9 @@ sys.path.append(os.getcwd())
 from src.sentinel.utils.taxonomy import Category  # noqa: E402
 
 
-def prepare_rail_a(input_path: str, output_path: str, seed: int = 42) -> None:
+def prepare_rail_a(
+    input_path: str, output_path: str, safe_ratio: float = 1.1, seed: int = 42
+) -> None:
     """
     Prepare Rail A dataset by extracting attacks and balancing with safe samples.
 
@@ -67,8 +72,8 @@ def prepare_rail_a(input_path: str, output_path: str, seed: int = 42) -> None:
     candidates_safe_df = df[safe_mask]
     logger.info(f"Found {len(candidates_safe_df)} Safe candidates.")
 
-    # 3. Sample Safe to balance (1.1x ratio - slightly more safe to prevent False Positives)
-    target_safe = int(num_attacks * 1.1)
+    # 3. Sample Safe to balance (default 1.1x ratio - slightly more safe)
+    target_safe = int(num_attacks * safe_ratio)
 
     if "lang" in candidates_safe_df.columns:
         logger.info(f"Sampling {target_safe} Safe examples (Language-aware)...")
@@ -101,11 +106,33 @@ def prepare_rail_a(input_path: str, output_path: str, seed: int = 42) -> None:
     logger.info(f"\nSaved to {output_path}")
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Prepare Rail A dataset from main dataset")
+    parser.add_argument("--input", type=str, default=None, help="Path to main dataset parquet")
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="data/processed/rail_a_jailbreak.parquet",
+        help="Output parquet path",
+    )
+    parser.add_argument(
+        "--safe-ratio",
+        type=float,
+        default=1.1,
+        help="Safe to attack ratio (e.g., 1.1 = 10 percent more safe samples)",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    IN_FILE = "data/processed/final_augmented_dataset_enriched.parquet"
-    if not os.path.exists(IN_FILE):
-        IN_FILE = "data/processed/final_augmented_dataset.parquet"
+    args = _parse_args()
 
-    OUT_FILE = "data/processed/rail_a_jailbreak.parquet"
+    if args.input:
+        in_file = args.input
+    else:
+        in_file = "data/processed/final_augmented_dataset_enriched.parquet"
+        if not os.path.exists(in_file):
+            in_file = "data/processed/final_augmented_dataset.parquet"
 
-    prepare_rail_a(IN_FILE, OUT_FILE)
+    prepare_rail_a(in_file, args.output, safe_ratio=args.safe_ratio, seed=args.seed)
