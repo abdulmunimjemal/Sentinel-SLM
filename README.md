@@ -31,6 +31,8 @@ The documentation is organized into a linear guide:
 5.  [**Training Results**](docs/04_training_results.md) - Performance metrics and charts.
 6.  [**Contributing**](docs/05_contributing.md) - How to build and test locally.
 
+Training configs live in `configs/` (e.g., `configs/rail_a.json`) for reproducible runs.
+
 ## 📦 Quick Start
 
 ```bash

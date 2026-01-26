@@ -55,6 +55,23 @@ print("🚨 ATTACK DETECTED" if prediction == 1 else "✅ SAFE")
 
 ## Advanced Usage
 
+### Training Rail A (Config-Driven)
+Rail A training is now driven by a JSON config for reproducibility.
+
+```bash
+.venv/bin/python src/sentinel/train/train_rail_a.py --config configs/rail_a.json
+```
+
+You can override parameters from the CLI:
+
+```bash
+.venv/bin/python src/sentinel/train/train_rail_a.py \\
+  --config configs/rail_a.json \\
+  --batch-size 16 \\
+  --max-length 384 \\
+  --learning-rate 0.0001
+```
+
 ### Loading Rail B (Policy Guard)
 Rail B is a **multi-label** classifier. It requires a slightly clear handling of outputs (sigmoid vs softmax).
 
@@ -98,6 +115,15 @@ You can configure Sentinel-SLM behavior using environment variables.
 | `SENTINEL_DEVICE` | `auto` | Force device (`cpu`, `cuda`, `mps`). |
 | `SENTINEL_BATCH_SIZE` | `8` | Default batch size for pipelines. |
 | `HF_TOKEN` | `None` | Required if accessing private gated repos. |
+
+### Rail A Data Prep Parameters
+You can tune Rail A dataset balance when extracting from the main dataset:
+
+```bash
+.venv/bin/python scripts/prepare_rail_a_data.py \\
+  --safe-ratio 1.1 \\
+  --seed 42
+```
 
 ---
 
