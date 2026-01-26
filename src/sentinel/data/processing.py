@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from tqdm import tqdm
 
+from src.sentinel.data.validation import clean_dataframe, log_label_distribution
 from src.sentinel.utils.taxonomy import CATEGORY_NAMES, MAPPING_RULES, Category
 
 logger = logging.getLogger(__name__)
@@ -224,6 +225,8 @@ def map_all_raw_data() -> pd.DataFrame:
         return pd.DataFrame()
 
     df = pd.DataFrame(all_data)
+    df = clean_dataframe(df)
+    log_label_distribution(df, title="Unified dataset")
     ensure_dir(PROCESSED_DIR)
 
     out_path = os.path.join(PROCESSED_DIR, "unified_dataset.parquet")
@@ -286,6 +289,8 @@ def merge_synthetic(df_main: pd.DataFrame) -> pd.DataFrame:
         logger.info("No synthetic data found (or empty). Using main dataset only.")
         df_final = df_main
 
+    df_final = clean_dataframe(df_final)
+    log_label_distribution(df_final, title="Final augmented dataset")
     final_path = os.path.join(PROCESSED_DIR, "final_augmented_dataset.parquet")
     df_final.to_parquet(final_path)
     logger.info(f"Saved Final Augmented Dataset: {len(df_final)} samples to {final_path}")
