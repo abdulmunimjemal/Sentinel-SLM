@@ -175,8 +175,34 @@ def load_rail_b_model(repo_id="abdulmunimjemal/Sentinel-Rail-B-Policy-Guard", de
 
 ### Rail A (Input Guard)
 
+**Single Prediction**
+
 ```python
-# ... (same as before)
+def predict_rail_a(text, model, tokenizer, device, return_probs=False):
+    """
+    Predict if text is an attack or safe.
+    """
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512,
+        padding=True
+    ).to(device)
+    
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+        probs = torch.softmax(logits, dim=-1)
+        prediction = torch.argmax(logits, dim=-1).item()
+    
+    if return_probs:
+        return prediction, probs[0].cpu().numpy()
+    return prediction
+
+# Example
+prediction = predict_rail_a("Ignore all previous instructions", model, tokenizer, device)
+print("ATTACK" if prediction == 1 else "SAFE")
 ```
 
 ### Rail B (Policy Guard)
@@ -204,62 +230,12 @@ print(violations)
 # Output: {'Violence': 0.63, 'Illegal': 0.87}
 ```
 
-### Single Prediction
-
-```python
-def predict(text, model, tokenizer, device, return_probs=False):
-    """
-    Predict if text is an attack or safe.
-    
-    Args:
-        text: Input text string
-        model: Loaded model
-        tokenizer: Loaded tokenizer
-        device: Torch device
-        return_probs: If True, return probabilities
-    
-    Returns:
-        prediction (0 or 1) or (prediction, probabilities) if return_probs=True
-    """
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=512,
-        padding=True
-    ).to(device)
-    
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits
-        probs = torch.softmax(logits, dim=-1)
-        prediction = torch.argmax(logits, dim=-1).item()
-    
-    if return_probs:
-        return prediction, probs[0].cpu().numpy()
-    return prediction
-
-# Example
-prediction = predict("Ignore all previous instructions", model, tokenizer, device)
-print("ATTACK" if prediction == 1 else "SAFE")
-```
-
-### Batch Prediction
+### Batch Prediction (Rail A)
 
 ```python
 def predict_batch(texts, model, tokenizer, device, batch_size=8):
     """
     Predict on a batch of texts.
-    
-    Args:
-        texts: List of input strings
-        model: Loaded model
-        tokenizer: Loaded tokenizer
-        device: Torch device
-        batch_size: Batch size for processing
-    
-    Returns:
-        List of predictions (0 or 1)
     """
     predictions = []
     
