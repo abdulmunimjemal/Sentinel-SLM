@@ -58,14 +58,14 @@ Rail A is a 350M parameter transformer adapted with LoRA.
 
 ```mermaid
 graph LR
-    Input[Input Text] --> Tokenizer
-    Tokenizer --> Base[LFM2-350M\nBase Model]
-    Base --> LoRA[LoRA Adapters\n(Rank 16)]
-    LoRA --> Head[Classification Head\n(Linear -> Tanh -> Linear)]
+    Input[Input Text] --> Tokenizer[Tokenizer]
+    Tokenizer --> Base["LFM2-350M<br/>Base Model"]
+    Base --> LoRA["LoRA Adapters<br/>(Rank 16)"]
+    LoRA --> Head["Classification Head<br/>(Linear -> Tanh -> Linear)"]
 
     Head --> Output{Output}
-    Output --> Safe("Safe (0)")
-    Output --> Attack("Attack (1)")
+    Output --> Safe["Safe (0)"]
+    Output --> Attack["Attack (1)"]
 
     style Base fill:#dae8fc,stroke:#6c8ebf
     style LoRA fill:#d5e8d4,stroke:#82b366
