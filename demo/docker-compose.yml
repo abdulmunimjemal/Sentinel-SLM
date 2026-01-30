@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEVICE=cpu
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  ui:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile.ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_started
