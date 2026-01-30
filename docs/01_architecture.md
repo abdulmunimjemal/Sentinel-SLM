@@ -10,10 +10,12 @@ Sentinel-SLM implements a **Dual-Rail Guardrail System** designed to protect Lar
 ## model Registry
 
 ### Published Models (Hugging Face)
+
 - **Rail A (Prompt Attack Guard)**: `abdulmunimjemal/Sentinel-Rail-A-Prompt-Attack-Guard`
 - **Rail B (Policy Guard)**: `abdulmunimjemal/Sentinel-Rail-B-Policy-Guard`
 
 ### Local Artifacts
+
 - **Rail A**: `models/rail_a_v3/final/`
 - **Rail B**: `models/rail_b_v1/final/`
 
@@ -24,24 +26,22 @@ Sentinel-SLM implements a **Dual-Rail Guardrail System** designed to protect Lar
 Sentinel-SLM sits between your user and your LLM. It acts as a bidirectional firewall.
 
 ```mermaid
-flowchart TD
+graph TD
     User([User Input]) --> RailA{Rail A<br/>Input Guard}
 
-    RailA --|Attack Detected|--> Block1[Block Request<br/>Return 403]
-    RailA --|Safe|--> LLM[Backbone LLM<br/>(e.g., Llama/GPT)]
+    RailA -- Attack Detected --> Block1[Block Request<br/>Return 403]
+    RailA -- Safe --> LLM[Backbone LLM<br/>(e.g., Llama/GPT)]
 
     LLM --> RailB{Rail B<br/>Policy Guard}
 
-    RailB --|Violation Detected|--> Block2[Block Output<br/>Return Safety Message]
-    RailB --|Safe|--> Response([Return Response])
+    RailB -- Violation Detected --> Block2[Block Output<br/>Return Safety Message]
+    RailB -- Safe --> Response([Return Response])
 
-    classDef guard fill:#ff9999,stroke:#333,stroke-width:2px;
-    classDef block fill:#ffcccc,stroke:#d62728,stroke-dasharray:5 5;
-    classDef llm fill:#e1d5e7,stroke:#9673a6,stroke-width:2px;
-
-    class RailA,RailB guard;
-    class Block1,Block2 block;
-    class LLM llm;
+    style RailA fill:#ff9999,stroke:#333,stroke-width:2px
+    style RailB fill:#ff9999,stroke:#333,stroke-width:2px
+    style Block1 fill:#ffcccc,stroke:#d62728,stroke-dasharray:5 5
+    style Block2 fill:#ffcccc,stroke:#d62728,stroke-dasharray:5 5
+    style LLM fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
 ```
 
 ---
@@ -49,9 +49,11 @@ flowchart TD
 ## Rail A: Input Guard
 
 ### Purpose
+
 Detect and block prompt injection attacks, jailbreaks, and adversarial inputs **before** they reach the core LLM.
 
 ### Model Internals
+
 Rail A is a 350M parameter transformer adapted with LoRA.
 
 ```mermaid
@@ -71,20 +73,23 @@ graph LR
 ```
 
 ### Performance
-| Metric | Score | Note |
-| :--- | :--- | :--- |
-| **Accuracy** | **99.42%** | High reliability on benchmark attacks. |
-| **Recall** | **99.83%** | Extremely low False Negative rate (missed attacks). |
-| **Latency** | **<50ms** | CPU-friendly inference. |
+
+| Metric       | Score      | Note                                                |
+| :----------- | :--------- | :-------------------------------------------------- |
+| **Accuracy** | **99.42%** | High reliability on benchmark attacks.              |
+| **Recall**   | **99.83%** | Extremely low False Negative rate (missed attacks). |
+| **Latency**  | **<50ms**  | CPU-friendly inference.                             |
 
 ---
 
 ## Rail B: Policy Guard
 
 ### Purpose
+
 Detect policy violations in both user inputs and LLM outputs across 8 safety categories.
 
 ### Architecture
+
 Rail B extends the same efficient 350M base with a **Multi-Label Classification Head**. Unlike Rail A (which is binary), Rail B outputs independent probabilities for 7 distinct categories.
 
 > [!NOTE]
@@ -92,19 +97,20 @@ Rail B extends the same efficient 350M base with a **Multi-Label Classification 
 > A single message can contain multiple violations (e.g., "Hate Speech" AND "Violence"). Our architecture detects all applicable tags simultaneously.
 
 ### Categories & Thresholds
-Each category works independently. If *any* category exceeds its threshold (default 0.5), the content is flagged.
 
-| ID | Category | Description |
-|:---|:---|:---|
-| 1 | **Hate & Extremism** | Hate speech, discrimination, extremism |
-| 2 | **Harassment** | Bullying, severe toxicity, personal attacks |
-| 3 | **Sexual Content** | NSFW, explicit sexual material |
-| 4 | **Child Safety** | CSAM, exploitation, grooming |
-| 5 | **Violence** | Gore, threats, self-harm |
-| 6 | **Illegal Activities** | Drug trade, weapons, financial crimes |
-| 7 | **Privacy Violations** | PII leaks, doxxing |
+Each category works independently. If _any_ category exceeds its threshold (default 0.5), the content is flagged.
 
-*(Category 8 "Prompt Attack" is handled exclusively by Rail A)*
+| ID  | Category               | Description                                 |
+| :-- | :--------------------- | :------------------------------------------ |
+| 1   | **Hate & Extremism**   | Hate speech, discrimination, extremism      |
+| 2   | **Harassment**         | Bullying, severe toxicity, personal attacks |
+| 3   | **Sexual Content**     | NSFW, explicit sexual material              |
+| 4   | **Child Safety**       | CSAM, exploitation, grooming                |
+| 5   | **Violence**           | Gore, threats, self-harm                    |
+| 6   | **Illegal Activities** | Drug trade, weapons, financial crimes       |
+| 7   | **Privacy Violations** | PII leaks, doxxing                          |
+
+_(Category 8 "Prompt Attack" is handled exclusively by Rail A)_
 
 ---
 
