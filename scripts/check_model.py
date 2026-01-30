@@ -1,5 +1,5 @@
+
 from transformers import AutoConfig
-import sys
 
 model_id = "LiquidAI/LFM2-350M"
 

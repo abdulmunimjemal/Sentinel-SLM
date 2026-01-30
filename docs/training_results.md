@@ -4,9 +4,9 @@
 
 This document details the training results for **Rail A (Input Guard)**, the prompt injection detection component of the Sentinel-SLM dual-rail architecture.
 
-**Model Version**: `rail_a_v3`  
-**Base Model**: `LiquidAI/LFM2-350M`  
-**Fine-tuning Method**: LoRA (Low-Rank Adaptation)  
+**Model Version**: `rail_a_v3`
+**Base Model**: `LiquidAI/LFM2-350M`
+**Fine-tuning Method**: LoRA (Low-Rank Adaptation)
 **Notebook Source**: `notebooks/04_train_rail_a.ipynb`
 
 ---

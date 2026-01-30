@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+
 class Category(IntEnum):
     SAFE = 0
     HATE_EXTREMISM = 1
@@ -11,6 +12,7 @@ class Category(IntEnum):
     PRIVACY = 7
     PROMPT_ATTACK = 8
 
+
 CATEGORY_NAMES = {
     0: "Safe",
     1: "Hate & Extremism",
@@ -20,7 +22,7 @@ CATEGORY_NAMES = {
     5: "Violence & Gore",
     6: "Illegal Activities",
     7: "Privacy Violations",
-    8: "Prompt Attacks"
+    8: "Prompt Attacks",
 }
 
 # Mapping rules for common datasets
@@ -44,7 +46,7 @@ MAPPING_RULES = {
         "obscene": Category.SEXUAL,
         "threat": Category.VIOLENCE,
         "insult": Category.HARASSMENT,
-        "identity_hate": Category.HATE_EXTREMISM
+        "identity_hate": Category.HATE_EXTREMISM,
     },
     "civil_comments": {
         "toxicity": Category.HARASSMENT,
@@ -53,16 +55,16 @@ MAPPING_RULES = {
         "threat": Category.VIOLENCE,
         "insult": Category.HARASSMENT,
         "identity_attack": Category.HATE_EXTREMISM,
-        "sexual_explicit": Category.SEXUAL
+        "sexual_explicit": Category.SEXUAL,
     },
     "koala": {
         "S": Category.SEXUAL,
         "H": Category.HATE_EXTREMISM,
         "V": Category.VIOLENCE,
         "HR": Category.HARASSMENT,
-        "SH": Category.VIOLENCE, # Self-harm
-        "S3": Category.CHILD_SAFETY, # Sexual/Minors
+        "SH": Category.VIOLENCE,  # Self-harm
+        "S3": Category.CHILD_SAFETY,  # Sexual/Minors
         "H2": Category.HATE_EXTREMISM,
-        "V2": Category.VIOLENCE
-    }
+        "V2": Category.VIOLENCE,
+    },
 }

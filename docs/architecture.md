@@ -224,7 +224,7 @@ with torch.no_grad():
     logits = outputs.logits
     probs = torch.softmax(logits, dim=-1)
     prediction = torch.argmax(logits, dim=-1).item()
-    
+
 if prediction == 1:  # Attack detected
     return {"blocked": True, "reason": "prompt_injection"}
 ```
@@ -244,10 +244,10 @@ rail_b_model = load_rail_b_model("models/rail_b_v1/final")
 with torch.no_grad():
     outputs = rail_b_model(**llm_outputs)
     category_logits = outputs.logits  # [batch, 8]
-    
+
     # Apply thresholds per category
     violations = (torch.sigmoid(category_logits) > thresholds).cpu().numpy()
-    
+
 if violations.any():
     return {"blocked": True, "violations": violations}
 else:

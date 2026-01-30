@@ -1,7 +1,7 @@
 # Sentinel-SLM: Agent Instructions
 
 **Welcome, Agent.**
-This file is your primary orientation guide. It describes the project structure, development workflow, and current state. 
+This file is your primary orientation guide. It describes the project structure, development workflow, and current state.
 **READ THIS FIRST before making changes.**
 
 ---
@@ -11,7 +11,7 @@ This file is your primary orientation guide. It describes the project structure,
 - **Rail A (Input Guard)**: Binary classifier for prompt injection/jailbreak detection
 - **Rail B (Policy Guard)**: Multi-label classifier for 8 safety categories
 
-**Status**: 
+**Status**:
 - **Phase 1 (Data Prep)**: Complete. Main dataset: `data/processed/final_augmented_dataset.parquet` (>1.6M samples)
 - **Phase 2 (Rail A Training)**: Complete. Model: `models/rail_a_v3/final/`
 - **Phase 3 (Rail B Training)**: Pending

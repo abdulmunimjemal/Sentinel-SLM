@@ -8,10 +8,10 @@ Usage:
 """
 
 import os
-import json
 import shutil
-from huggingface_hub import HfApi, create_repo, upload_folder, upload_file
+
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
 
 # Load environment variables
 load_dotenv()
@@ -178,7 +178,7 @@ class SentinelClassifier(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(hidden_size, num_labels)
         )
-    
+
     def forward(self, x):
         return self.classifier(x)
 
@@ -222,10 +222,11 @@ for i, cat in enumerate(CATS):
 - **Sentinel-SLM Project**: [GitHub](https://github.com/abdulmunimjemal/Sentinel-SLM)
 """
 
+
 def main():
     print("🚀 Sentinel Rail B Upload Script (350M)")
     print("=" * 50)
-    
+
     # 1. Verify Directory
     if not os.path.exists(MODEL_DIR):
         print(f"❌ Error: Model directory not found at {MODEL_DIR}")
@@ -235,14 +236,14 @@ def main():
     readme_path = os.path.join(MODEL_DIR, "README.md")
     with open(readme_path, "w") as f:
         f.write(MODEL_CARD)
-    print(f"✅ Generated README.md (Model Card)")
-    
+    print("✅ Generated README.md (Model Card)")
+
     # 3. Copy F1 chart image to final dir for upload
     img_src = os.path.join(IMAGES_DIR, "per_category_f1.png")
     img_dst = os.path.join(MODEL_DIR, "per_category_f1.png")
     if os.path.exists(img_src):
         shutil.copy(img_src, img_dst)
-        print(f"✅ Copied per_category_f1.png")
+        print("✅ Copied per_category_f1.png")
     else:
         print(f"⚠️ Warning: {img_src} not found")
 
@@ -251,7 +252,7 @@ def main():
     if not token:
         print("❌ Error: HF_TOKEN not found in environment.")
         return
-    
+
     api = HfApi()
 
     # 5. Create Repo
@@ -269,12 +270,13 @@ def main():
             repo_id=REPO_ID,
             repo_type=REPO_TYPE,
             commit_message="Release Rail B (v1): 350M 7-Label Policy Guard with Balanced Training",
-            token=token
+            token=token,
         )
         print("\n🎉 SUCCESS! Model uploaded.")
         print(f"🔗 URL: https://huggingface.co/{REPO_ID}")
     except Exception as e:
         print(f"❌ Upload failed: {e}")
+
 
 if __name__ == "__main__":
     main()

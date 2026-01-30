@@ -8,7 +8,7 @@ This document summarizes high-quality, multilingual State-Of-The-Art (SOTA) data
 - **Use Case:** Core Policy Training (Rail B)
 - **Size:** ~1.62M samples
 - **Languages:** Multilingual (Aggregated from OpenAI, ifmain, etc.)
-- **Labels:** 
+- **Labels:**
     - `S` = Sexual
     - `H` = Hate
     - `V` = Violence

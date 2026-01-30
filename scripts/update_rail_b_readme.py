@@ -7,15 +7,16 @@ Usage:
 """
 
 import os
-from huggingface_hub import HfApi
+
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
 
 load_dotenv()
 
 REPO_ID = "abdulmunimjemal/Sentinel-Rail-B-Policy-Guard"
 
 # The EXACT class definition provided by the user
-CLASS_DEF = '''class SentinelLFMMultiLabel(nn.Module):
+CLASS_DEF = """class SentinelLFMMultiLabel(nn.Module):
     def __init__(self, model_id, num_labels):
         super().__init__()
         self.num_labels = num_labels
@@ -29,7 +30,7 @@ CLASS_DEF = '''class SentinelLFMMultiLabel(nn.Module):
             nn.Linear(hidden_size, num_labels)
         )
         self.loss_fct = nn.BCEWithLogitsLoss()
-    
+
     def forward(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
         outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)
         hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs.last_hidden_state
@@ -41,7 +42,7 @@ CLASS_DEF = '''class SentinelLFMMultiLabel(nn.Module):
         logits = self.classifier(pooled)
         loss = self.loss_fct(logits, labels.float()) if labels is not None else None
         from transformers.modeling_outputs import SequenceClassifierOutput
-        return SequenceClassifierOutput(loss=loss, logits=logits)'''
+        return SequenceClassifierOutput(loss=loss, logits=logits)"""
 
 # Construct the corrected README
 README_CONTENT = f"""---
@@ -69,7 +70,7 @@ metrics:
 
 # 🛡️ Sentinel Rail B: Policy Guard (350M)
 
-**Sentinel Rail B** is a lightweight, efficient **multi-label classifier** designed to detect 7 distinct categories of policy violations in text. 
+**Sentinel Rail B** is a lightweight, efficient **multi-label classifier** designed to detect 7 distinct categories of policy violations in text.
 
 > **Architecture Note**: This model uses a custom classification head on top of the **LiquidAI LFM2-350M** base model. The repository contains the LoRA adapter weights (`adapter_model.safetensors`) AND the separate classifier head weights (`classifier.pt`).
 
@@ -184,9 +185,10 @@ Rare classes like Privacy and Illegal were upsampled to ~15,000 samples each to 
 [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 """
 
+
 def main():
     print(f"🚀 Updating README.md for {REPO_ID}...")
-    
+
     # 1. Save locally for reference
     with open("models/rail_b_v1/final/README.md", "w") as f:
         f.write(README_CONTENT)
@@ -204,12 +206,13 @@ def main():
             path_or_fileobj=README_CONTENT.encode("utf-8"),
             path_in_repo="README.md",
             repo_id=REPO_ID,
-            commit_message="Update Model Card with Correct Architecture & Usage Code"
+            commit_message="Update Model Card with Correct Architecture & Usage Code",
         )
         print("✅ Success! README updated on Hugging Face.")
         print(f"🔗 Check it here: https://huggingface.co/{REPO_ID}")
     except Exception as e:
         print(f"❌ Error updating README: {e}")
+
 
 if __name__ == "__main__":
     main()

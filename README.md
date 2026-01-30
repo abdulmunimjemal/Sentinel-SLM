@@ -318,15 +318,15 @@ def safe_llm_generate(user_input, llm_model):
     rail_a_result = rail_a_model.predict(user_input)
     if rail_a_result == "ATTACK":
         return {"error": "Input blocked: potential prompt injection"}
-    
+
     # Generate with LLM
     llm_output = llm_model.generate(user_input)
-    
+
     # Rail B: Check output (when available)
     # rail_b_result = rail_b_model.predict(llm_output)
     # if rail_b_result.has_violations():
     #     return {"error": "Output blocked: policy violation"}
-    
+
     return {"output": llm_output}
 ```
 

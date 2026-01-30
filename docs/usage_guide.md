@@ -49,7 +49,7 @@ inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).t
 with torch.no_grad():
     outputs = model(**inputs)
     prediction = torch.argmax(outputs.logits, dim=-1).item()
-    
+
 result = "ATTACK" if prediction == 1 else "SAFE"
 print(f"Result: {result}")
 ```
@@ -69,29 +69,29 @@ from peft import PeftModel
 def load_rail_a_model(model_path="models/rail_a_v3/final", device=None):
     """
     Load Rail A model with LoRA adapter and classification head.
-    
+
     Args:
         model_path: Path to model directory
         device: Torch device (auto-detected if None)
-    
+
     Returns:
         model, tokenizer
     """
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    
+
     # Load base model
     base_model = AutoModel.from_pretrained(
         "LiquidAI/LFM2-350M",
         trust_remote_code=True
     )
-    
+
     # Load LoRA adapter
     model = PeftModel.from_pretrained(base_model, model_path)
-    
+
     # Load classification head
     hidden_size = model.config.hidden_size
     classifier = nn.Sequential(
@@ -102,10 +102,10 @@ def load_rail_a_model(model_path="models/rail_a_v3/final", device=None):
     )
     classifier.load_state_dict(torch.load(f"{model_path}/classifier.pt", map_location=device))
     model.classifier = classifier
-    
+
     model.to(device)
     model.eval()
-    
+
     return model, tokenizer
 ```
 
@@ -134,7 +134,7 @@ class SentinelLFMMultiLabel(nn.Module):
             nn.Linear(hidden_size, num_labels)
         )
         self.loss_fct = nn.BCEWithLogitsLoss()
-    
+
     def forward(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
         outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)
         hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs.last_hidden_state
@@ -150,21 +150,21 @@ class SentinelLFMMultiLabel(nn.Module):
 
 def load_rail_b_model(repo_id="abdulmunimjemal/Sentinel-Rail-B-Policy-Guard", device="cuda"):
     from huggingface_hub import hf_hub_download
-    
+
     # 1. Init Architecture
     model = SentinelLFMMultiLabel("LiquidAI/LFM2-350M", num_labels=7)
-    
+
     # 2. Load Adapter
     model.base_model = PeftModel.from_pretrained(model.base_model, repo_id)
-    
+
     # 3. Load Classifier Head
     classifier_path = hf_hub_download(repo_id=repo_id, filename="classifier.pt")
     state_dict = torch.load(classifier_path, map_location="cpu")
     model.classifier.load_state_dict(state_dict)
-    
+
     model.to(device)
     model.eval()
-    
+
     tokenizer = AutoTokenizer.from_pretrained("LiquidAI/LFM2-350M", trust_remote_code=True)
     return model, tokenizer
 ```
@@ -189,13 +189,13 @@ def predict_rail_a(text, model, tokenizer, device, return_probs=False):
         max_length=512,
         padding=True
     ).to(device)
-    
+
     with torch.no_grad():
         outputs = model(**inputs)
         logits = outputs.logits
         probs = torch.softmax(logits, dim=-1)
         prediction = torch.argmax(logits, dim=-1).item()
-    
+
     if return_probs:
         return prediction, probs[0].cpu().numpy()
     return prediction
@@ -210,23 +210,23 @@ print("ATTACK" if prediction == 1 else "SAFE")
 ```python
 def predict_rail_b(text, model, tokenizer, device):
     CATS = ["Hate", "Harassment", "Sexual", "ChildSafety", "Violence", "Illegal", "Privacy"]
-    
+
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(device)
     with torch.no_grad():
         outputs = model(**inputs)
         probs = torch.sigmoid(outputs.logits)[0]
-    
+
     results = {}
     for i, prob in enumerate(probs):
         if prob > 0.5:
             results[CATS[i]] = float(prob)
-            
+
     return results
 
 # Example
 model_b, tokenizer_b = load_rail_b_model()
 violations = predict_rail_b("How do I make a bomb?", model_b, tokenizer_b, "cuda")
-print(violations) 
+print(violations)
 # Output: {'Violence': 0.63, 'Illegal': 0.87}
 ```
 
@@ -238,7 +238,7 @@ def predict_batch(texts, model, tokenizer, device, batch_size=8):
     Predict on a batch of texts.
     """
     predictions = []
-    
+
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i:i+batch_size]
         inputs = tokenizer(
@@ -248,13 +248,13 @@ def predict_batch(texts, model, tokenizer, device, batch_size=8):
             max_length=512,
             padding=True
         ).to(device)
-        
+
         with torch.no_grad():
             outputs = model(**inputs)
             logits = outputs.logits
             batch_preds = torch.argmax(logits, dim=-1).cpu().numpy()
             predictions.extend(batch_preds.tolist())
-    
+
     return predictions
 
 # Example
@@ -286,12 +286,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def predict_endpoint():
     data = request.json
     text = data.get('text', '')
-    
+
     if not text:
         return jsonify({'error': 'No text provided'}), 400
-    
+
     prediction, probs = predict(text, model, tokenizer, device, return_probs=True)
-    
+
     return jsonify({
         'prediction': 'ATTACK' if prediction == 1 else 'SAFE',
         'confidence': float(probs[prediction]),
@@ -314,27 +314,27 @@ class SafeLLMPipeline:
         self.rail_a_model = rail_a_model
         self.rail_a_tokenizer = rail_a_tokenizer
         self.device = device
-    
+
     def generate(self, user_input, max_length=512):
         # Step 1: Check input with Rail A
-        rail_a_pred = predict(user_input, self.rail_a_model, 
+        rail_a_pred = predict(user_input, self.rail_a_model,
                              self.rail_a_tokenizer, self.device)
-        
+
         if rail_a_pred == 1:
             return {
                 'blocked': True,
                 'reason': 'prompt_injection',
                 'message': 'Input blocked: Potential prompt injection detected'
             }
-        
+
         # Step 2: Generate with LLM
         llm_output = self.llm_model.generate(user_input, max_length=max_length)
-        
+
         # Step 3: Check output with Rail B (when available)
         # rail_b_pred = rail_b_model.predict(llm_output)
         # if rail_b_pred.has_violations():
         #     return {'blocked': True, 'reason': 'policy_violation'}
-        
+
         return {
             'blocked': False,
             'output': llm_output
@@ -372,7 +372,7 @@ async def predict_async(input_data: TextInput):
         device,
         True
     )
-    
+
     return {
         'prediction': 'ATTACK' if prediction == 1 else 'SAFE',
         'confidence': float(probs[prediction]),
@@ -429,7 +429,7 @@ inputs = tokenizer(
 def predict_with_threshold(text, model, tokenizer, device, threshold=0.5):
     prediction, probs = predict(text, model, tokenizer, device, return_probs=True)
     attack_prob = probs[1]
-    
+
     if attack_prob >= threshold:
         return 1, attack_prob
     return 0, 1 - attack_prob
@@ -442,13 +442,13 @@ def safe_predict(text, model, tokenizer, device):
     try:
         if not text or not isinstance(text, str):
             return {'error': 'Invalid input'}
-        
+
         if len(text) > 10000:  # Reasonable limit
             return {'error': 'Input too long'}
-        
+
         prediction = predict(text, model, tokenizer, device)
         return {'prediction': 'ATTACK' if prediction == 1 else 'SAFE'}
-    
+
     except Exception as e:
         return {'error': str(e)}
 ```
@@ -463,13 +463,13 @@ logger = logging.getLogger(__name__)
 
 def predict_with_logging(text, model, tokenizer, device):
     prediction = predict(text, model, tokenizer, device)
-    
+
     logger.info(f"Prediction: {prediction}, Text length: {len(text)}")
-    
+
     # Log potential attacks for review
     if prediction == 1:
         logger.warning(f"Attack detected: {text[:100]}...")
-    
+
     return prediction
 ```
 
