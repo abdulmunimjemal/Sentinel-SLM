@@ -25,21 +25,23 @@ Sentinel-SLM sits between your user and your LLM. It acts as a bidirectional fir
 
 ```mermaid
 flowchart TD
-    User([User Input]) --> RailA{Rail A\nInput Guard}
+    User([User Input]) --> RailA{Rail A<br/>Input Guard}
 
-    RailA -- "🚨 Attack Detected" --> Block1[Block Request\nReturn 403]
-    RailA -- "✅ Safe" --> LLM[Backbone LLM\n(e.g., Llama/GPT)]
+    RailA --|Attack Detected|--> Block1[Block Request<br/>Return 403]
+    RailA --|Safe|--> LLM[Backbone LLM<br/>(e.g., Llama/GPT)]
 
-    LLM --> RailB{Rail B\nPolicy Guard}
+    LLM --> RailB{Rail B<br/>Policy Guard}
 
-    RailB -- "🚨 Violation Detected" --> Block2[Block Output\nReturn Safety Message]
-    RailB -- "✅ Safe" --> Response([Return Response])
+    RailB --|Violation Detected|--> Block2[Block Output<br/>Return Safety Message]
+    RailB --|Safe|--> Response([Return Response])
 
-    style RailA fill:#ff9999,stroke:#333,stroke-width:2px
-    style RailB fill:#ff9999,stroke:#333,stroke-width:2px
-    style Block1 fill:#ffcccc,stroke:#d62728,stroke-dasharray: 5 5
-    style Block2 fill:#ffcccc,stroke:#d62728,stroke-dasharray: 5 5
-    style LLM fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
+    classDef guard fill:#ff9999,stroke:#333,stroke-width:2px;
+    classDef block fill:#ffcccc,stroke:#d62728,stroke-dasharray:5 5;
+    classDef llm fill:#e1d5e7,stroke:#9673a6,stroke-width:2px;
+
+    class RailA,RailB guard;
+    class Block1,Block2 block;
+    class LLM llm;
 ```
 
 ---
