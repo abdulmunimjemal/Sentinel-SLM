@@ -347,3 +347,8 @@ model.classifier = classifier
 - [LoRA Paper](https://arxiv.org/abs/2106.09685)
 - [Llama Guard](https://github.com/facebookresearch/PurpleLlama)
 - [MLCommon Safety Benchmarks](https://github.com/mlcommons)
+
+
+---
+
+[← Previous: Introduction](00_introduction.md) | [Next: Installation & Usage →](02_installation_usage.md)

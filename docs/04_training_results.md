@@ -271,3 +271,8 @@ If you use this model or training methodology, please cite:
 ## Contact
 
 For questions or issues related to training or model performance, please open an issue on the GitHub repository.
+
+
+---
+
+[← Previous: Dataset & Taxonomy](03_dataset_taxonomy.md) | [Next: Contributing →](05_contributing.md)
