@@ -9,6 +9,40 @@ Sentinel-SLM implements a **Dual-Rail Guardrail System** designed to protect Lar
 
 ---
 
+## Model Registry
+
+**Published Models (Hugging Face)**
+
+- **Rail A (Prompt Attack Guard)**: `abdulmunimjemal/Sentinel-Rail-A-Prompt-Attack-Guard`
+- **Rail B (Policy Guard)**: `abdulmunimjemal/Sentinel-Rail-B-Policy-Guard`
+
+**Local Artifacts (this repo)**
+
+- **Rail A**: `models/rail_a_v3/final/`
+- **Rail B (training output)**: `models/rail_b_v1/final/`
+
+---
+
+## Why Liquid Models (LFM2)
+
+Sentinel-SLM uses **LiquidAI LFM2** models because they are explicitly designed for **fast, low-latency inference and edge/on-device deployment** while preserving strong language understanding. The LFM2 family uses a modern transformer backbone with efficiency-oriented architectural choices that are well-suited to moderation workloads (short-to-medium prompts, frequent calls, tight latency budgets).
+
+**Key reasons for the choice:**
+
+- **Edge + on-device focus**: LFM2 models are designed to run efficiently across CPU/GPU/NPU environments, enabling deployment in latency-sensitive or privacy-constrained settings (see the Transformers LFM2 docs).
+- **Efficiency-oriented architecture**: LFM2 uses **gated short-convolution + grouped-query attention** with **QK layer normalization**, combining efficient sequence modeling with strong attention performance (see the Transformers LFM2 docs).
+- **Speed emphasis**: Liquid AI reports faster prefill and decode performance for LFM2 on CPU versus common open baselines, reinforcing its suitability for real-time guardrails (see the Liquid AI LFM2 blog).
+- **Right-sized base**: For Rail A, the **350M** LFM2 model provides a strong performance/latency balance (model card lists ~354M params).
+
+> **Note on latency**: Sentinel-SLM targets sub-50ms inference in production, but actual latency depends on hardware, batching, and deployment stack. Benchmark your own environment.
+
+**References**
+- https://huggingface.co/docs/transformers/model_doc/lfm2
+- https://huggingface.co/LiquidAI/LFM2-350M
+- https://www.liquid.ai/blog/introducing-lfm2-our-new-state-of-the-art-language-models
+
+---
+
 ## System Architecture
 
 ```
@@ -45,7 +79,7 @@ Sentinel-SLM implements a **Dual-Rail Guardrail System** designed to protect Lar
            ▼
     ┌──────────────────────┐
     │   Rail B (Output)    │  ← Policy Violation Detection
-    │  Multi-label (8)     │
+    │  Multi-label (7)     │
     └──────────┬───────────┘
                │
                ▼
@@ -76,14 +110,14 @@ Detect and block prompt injection attacks, jailbreaks, and adversarial inputs **
 #### Base Model
 - **Model**: `LiquidAI/LFM2-350M`
 - **Type**: Transformer-based encoder
-- **Parameters**: 350M base parameters
+- **Parameters**: ~355M (LFM2-350M model card)
 
 #### Fine-tuning
 - **Method**: LoRA (Low-Rank Adaptation)
 - **Rank**: 16
 - **Alpha**: 32
 - **Target Modules**: Attention projection layers (`q_proj`, `k_proj`, `v_proj`, `out_proj`)
-- **Trainable Parameters**: ~1.5M (0.4% of base model)
+- **Trainable Parameters**: 1,015,808 (0.2857% of base model, from `notebooks/04_train_rail_a.ipynb`)
 
 #### Classification Head
 ```
@@ -119,17 +153,17 @@ Output: [batch_size, 2] logits
 ### Purpose
 Detect policy violations in both user inputs and LLM outputs across 8 safety categories.
 
-### Architecture (Planned)
+### Architecture (Notebook-Defined)
 
 #### Base Model
-- **Model**: TBD (1.2B - 3B parameter range)
+- **Model**: `LiquidAI/LFM2-350M`
 - **Type**: Transformer-based encoder
-- **Fine-tuning**: LoRA or full fine-tuning
+- **Fine-tuning**: LoRA (r=16, alpha=32, dropout=0.1)
 
 #### Classification Head
-- **Multi-label Classification**: 8 categories (0-8)
-- **Output Format**: Binary logits per category
-- **Decision Logic**: Independent threshold per category
+- **Multi-label Classification**: 7 categories (Prompt Attack excluded; handled by Rail A)
+- **Output Format**: Binary logits per category with `BCEWithLogitsLoss`
+- **Decision Logic**: Independent threshold per category (default 0.5)
 
 ### Categories
 
@@ -145,7 +179,7 @@ Detect policy violations in both user inputs and LLM outputs across 8 safety cat
 | 7  | Privacy Violations | PII leaks, doxxing |
 | 8  | Prompt Attacks | Jailbreaks, prompt injection |
 
-**Note**: Category 8 overlaps with Rail A's domain but serves as a secondary check.
+**Note**: Category 8 overlaps with Rail A's domain. The Rail B training notebook excludes Prompt Attack by design and uses 7 labels.
 
 ---
 

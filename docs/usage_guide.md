@@ -115,9 +115,94 @@ def load_rail_a_model(model_path="models/rail_a_v3/final", device=None):
 model, tokenizer = load_rail_a_model()
 ```
 
+### Rail B Model Loading (Policy Guard)
+
+Rail B uses a custom architecture. You must define the class before loading.
+
+```python
+class SentinelLFMMultiLabel(nn.Module):
+    def __init__(self, model_id, num_labels):
+        super().__init__()
+        self.num_labels = num_labels
+        self.base_model = AutoModel.from_pretrained(model_id, trust_remote_code=True)
+        self.config = self.base_model.config
+        hidden_size = self.config.hidden_size
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.Tanh(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_size, num_labels)
+        )
+        self.loss_fct = nn.BCEWithLogitsLoss()
+    
+    def forward(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
+        outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)
+        hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs.last_hidden_state
+        if attention_mask is not None:
+            last_idx = attention_mask.sum(1) - 1
+            pooled = hidden_states[torch.arange(input_ids.shape[0], device=input_ids.device), last_idx]
+        else:
+            pooled = hidden_states[:, -1, :]
+        logits = self.classifier(pooled)
+        loss = self.loss_fct(logits, labels.float()) if labels is not None else None
+        from transformers.modeling_outputs import SequenceClassifierOutput
+        return SequenceClassifierOutput(loss=loss, logits=logits)
+
+def load_rail_b_model(repo_id="abdulmunimjemal/Sentinel-Rail-B-Policy-Guard", device="cuda"):
+    from huggingface_hub import hf_hub_download
+    
+    # 1. Init Architecture
+    model = SentinelLFMMultiLabel("LiquidAI/LFM2-350M", num_labels=7)
+    
+    # 2. Load Adapter
+    model.base_model = PeftModel.from_pretrained(model.base_model, repo_id)
+    
+    # 3. Load Classifier Head
+    classifier_path = hf_hub_download(repo_id=repo_id, filename="classifier.pt")
+    state_dict = torch.load(classifier_path, map_location="cpu")
+    model.classifier.load_state_dict(state_dict)
+    
+    model.to(device)
+    model.eval()
+    
+    tokenizer = AutoTokenizer.from_pretrained("LiquidAI/LFM2-350M", trust_remote_code=True)
+    return model, tokenizer
+```
+
 ---
 
 ## Inference
+
+### Rail A (Input Guard)
+
+```python
+# ... (same as before)
+```
+
+### Rail B (Policy Guard)
+
+```python
+def predict_rail_b(text, model, tokenizer, device):
+    CATS = ["Hate", "Harassment", "Sexual", "ChildSafety", "Violence", "Illegal", "Privacy"]
+    
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(device)
+    with torch.no_grad():
+        outputs = model(**inputs)
+        probs = torch.sigmoid(outputs.logits)[0]
+    
+    results = {}
+    for i, prob in enumerate(probs):
+        if prob > 0.5:
+            results[CATS[i]] = float(prob)
+            
+    return results
+
+# Example
+model_b, tokenizer_b = load_rail_b_model()
+violations = predict_rail_b("How do I make a bomb?", model_b, tokenizer_b, "cuda")
+print(violations) 
+# Output: {'Violence': 0.63, 'Illegal': 0.87}
+```
 
 ### Single Prediction
 

@@ -4,10 +4,10 @@
 
 This document details the training results for **Rail A (Input Guard)**, the prompt injection detection component of the Sentinel-SLM dual-rail architecture.
 
-**Training Date**: January 2025  
 **Model Version**: `rail_a_v3`  
 **Base Model**: `LiquidAI/LFM2-350M`  
-**Fine-tuning Method**: LoRA (Low-Rank Adaptation)
+**Fine-tuning Method**: LoRA (Low-Rank Adaptation)  
+**Notebook Source**: `notebooks/04_train_rail_a.ipynb`
 
 ---
 
@@ -17,9 +17,11 @@ This document details the training results for **Rail A (Input Guard)**, the pro
 - **Source**: `data/processed/rail_a_clean.parquet`
 - **Total Samples**: 7,782
 - **Class Distribution**:
-  - Safe (Class 0): 3,891 samples (50.0%)
-  - Attack (Class 1): 3,891 samples (50.0%)
-- **Balance Ratio**: 1.00 (Perfectly balanced)
+  - Safe (Class 0): 3,886 samples (~49.9%)
+  - Attack (Class 1): 3,896 samples (~50.1%)
+- **Train/Eval Split**:
+  - Train: 6,225
+  - Eval: 1,557
 
 ### Data Sources
 The training dataset was constructed from **5 external jailbreak/prompt injection datasets**:
@@ -49,32 +51,23 @@ Safe samples were balanced using:
   - LoRA Alpha: 32
   - Target Modules: `["out_proj", "v_proj", "q_proj", "k_proj"]`
   - LoRA Dropout: 0.1
+  - **Trainable Parameters**: 1,015,808 (0.2857% of base model)
 
 ### Hardware
-- **Device**: Apple Silicon (MPS)
-- **Training Time**: ~45 minutes per epoch
+- **Device**: Apple Silicon (PyTorch `mps`)
+- **Note**: Notebook output reports `Device: mps`. No wall-clock timing was logged.
 
 ---
 
 ## Training Metrics
 
-### Epoch-by-Epoch Performance
-
-| Epoch | Training Loss | Validation Loss | Accuracy | F1 Score | Precision | Recall |
-|-------|---------------|-----------------|----------|----------|-----------|--------|
-| 1     | 0.9904        | 0.9907          | 0.9901   | 0.9914   | 0.9901    | 0.9926 |
-| 2     | 0.9923        | 0.9926          | 0.9975   | 0.9926   | 0.9923    | 0.9926 |
-| 3     | 0.9942        | 0.9945          | 0.9926   | 0.9963   | 0.9942    | 0.9983 |
-
-### Final Model Performance
+### Final Model Performance (Eval Set)
 
 **Overall Metrics**:
-- **Accuracy**: 99.42%
-- **F1 Score**: 99.45%
-- **Precision**: 99.42%
-- **Recall**: 99.83%
+- **Accuracy**: 0.9942
+- **F1 Score**: 0.9945
 
-### Per-Class Performance (Epoch 3)
+### Per-Class Performance (Eval Set)
 
 | Class   | Precision | Recall | F1-Score | Support |
 |---------|-----------|--------|----------|---------|
@@ -99,6 +92,15 @@ Safe samples were balanced using:
    - Appropriate regularization (LoRA dropout)
    - Sufficient training data
    - Good generalization capability
+
+
+### Visualizations
+
+![Training Curves](assets/rail_a_training_curves.png)
+*Figure 1: Rail A Training Loss and Accuracy Curves*
+
+![Confusion Matrix](assets/rail_a_confusion_matrix.png)
+*Figure 2: Rail A Confusion Matrix (Eval Set)*
 
 ---
 
@@ -132,7 +134,7 @@ Linear(hidden_size → 2)
 
 ## Evaluation on Test Suite
 
-The model was evaluated on a comprehensive test suite of **50+ examples** covering:
+The model was evaluated on a manual test suite of **48 examples** (see `notebooks/05_test_rail_a.ipynb`) covering:
 
 ### Test Categories
 1. **Clearly Safe Examples** (20 cases)
@@ -156,9 +158,9 @@ The model was evaluated on a comprehensive test suite of **50+ examples** coveri
    - Data smuggling techniques
 
 ### Test Results
-- **Accuracy**: >99% on test suite
-- **False Positives**: Minimal (correctly identifies safe educational content)
-- **False Negatives**: Minimal (detects even embedded injection patterns)
+- **Accuracy**: 100% (48/48)
+- **False Positives**: 0
+- **False Negatives**: 0
 
 ---
 
@@ -187,17 +189,9 @@ models/rail_a_v3/final/
 
 ## Deployment Considerations
 
-### Inference Performance
-- **Latency**: <50ms per sample (on Apple Silicon)
-- **Throughput**: ~20 samples/second (batch size 1)
-- **Memory**: ~2 GB RAM required
-
-### Production Readiness
-✅ **Ready for Production**:
-- High accuracy (>99%)
-- Low false positive rate
-- Efficient inference
-- Small model footprint
+### Performance Notes
+- **Latency and throughput were not benchmarked in the notebooks.**
+- Use your deployment hardware and batch size to measure actual latency and throughput.
 
 ### Recommendations
 1. **Monitoring**: Track false positive/negative rates in production
@@ -234,6 +228,43 @@ If you use this model or training methodology, please cite:
   url={https://github.com/abdulmunimjemal/Sentinel-SLM}
 }
 ```
+
+---
+
+---
+
+## Rail B (Policy Guard) Results
+
+**Model**: `LiquidAI/LFM2-350M` + LoRA
+**Dataset**: ~189,000 balanced samples (50% Safe / 50% Violations)
+**Training Configuration**: 2 Epochs, Batch Size 8 (Effective 64), LR 2e-4.
+
+### Performance Metrics
+
+| Metric | Score |
+|--------|-------|
+| **F1 Micro** | 0.7647 |
+| **F1 Macro** | 0.7793 |
+| **Hamming Loss** | 0.0466 |
+
+### Per-Category Analysis
+
+| Category | F1 Score | Status | Notes |
+|----------|----------|--------|-------|
+| **Privacy** | 0.9927 | 🟢 Excellent | Clear signal, learned quickly. |
+| **Illegal** | 0.9750 | 🟢 Excellent | Strong distinguishing features. |
+| **ChildSafety** | 0.7783 | 🟢 Good | Reliable detection. |
+| **Violence** | 0.7727 | 🟢 Good | Robust performance. |
+| **Sexual** | 0.7415 | 🟢 Good | Good generalization. |
+| **Harassment** | 0.6160 | 🟡 Fair | Requires more training (under-fit). |
+| **Hate** | 0.5786 | 🟡 Fair | Requires more training (under-fit). |
+
+**Insight**: Hate and Harassment categories were still showing significant loss reduction at the end of training. Increasing training epochs from 2 to 5+ would likely yield substantial improvements in these complex categories.
+
+### Visualizations
+
+![Per-Category F1 Scores](assets/rail_b_f1.png)
+*Figure 3: Rail B Per-Category F1 Scores*
 
 ---
 

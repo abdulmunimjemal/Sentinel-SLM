@@ -45,10 +45,11 @@ Built on a foundation of **1.67M+ training samples** from state-of-the-art safet
 - **Performance**: 99.2% accuracy, 99.1% F1-score
 - **Usage**: `from_pretrained("abdulmunimjemal/sentinel-rail-a")`
 
-**Rail B - Policy Guard** (In Development)
-- Multi-label classification across 8 safety categories
+**Rail B - Policy Guard** 🔗 [**Available on Hugging Face**](https://huggingface.co/abdulmunimjemal/Sentinel-Rail-B-Policy-Guard)
+- Multi-label classification across 7 safety categories
 - Validates both user inputs and LLM outputs
-- Comprehensive policy violation detection
+- **Performance**: F1 Macro 0.77 (Privacy/Illegal > 0.97)
+- **Usage**: Custom `SentinelLFMMultiLabel` architecture (see docs)
 
 ### 📊 8-Category Safety Taxonomy
 
@@ -439,14 +440,15 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Roadmap
 
 ### Completed ✅
-- [x] Rail A training pipeline
+- [x] Rail A training pipeline (Input Guard)
+- [x] Rail B training pipeline (Policy Guard)
 - [x] Comprehensive evaluation suite
 - [x] Model finalization and deployment
 - [x] Documentation and architecture docs
 
 ### In Progress 🚧
-- [ ] Rail B training and evaluation
 - [ ] Production API server
+- [ ] Multilingual evaluation expansion
 - [ ] Multilingual evaluation expansion
 
 ### Planned 📋
