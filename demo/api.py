@@ -56,16 +56,25 @@ def load_rail_a():
     """Load Rail A (Input Guard) model."""
     logger.info("Loading Rail A model...")
 
-    # Use HuggingFace Hub model
-    model_id = "abdulmunimjemal/Sentinel-Rail-A-Prompt-Attack-Guard"
+    # Use Local Model
+    # model_id = "abdulmunimjemal/Sentinel-Rail-A-Prompt-Attack-Guard"
+    model_path = "../models/rail_a_v3/final"
 
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    base_model = AutoModel.from_pretrained("LiquidAI/LFM2-350M", trust_remote_code=True)
-    model = PeftModel.from_pretrained(base_model, model_id)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        logger.warning("Tokenizer has no pad_token. Setting to eos_token.")
+        tokenizer.pad_token = tokenizer.eos_token
+    base_model = AutoModel.from_pretrained(
+        "LiquidAI/LFM2-350M",
+        trust_remote_code=True,
+        torch_dtype=torch.float32,
+    )
+    model = PeftModel.from_pretrained(base_model, model_path)
 
     # Load classifier head
-    from huggingface_hub import hf_hub_download
-    classifier_path = hf_hub_download(repo_id=model_id, filename="classifier.pt")
+    # from huggingface_hub import hf_hub_download
+    # classifier_path = hf_hub_download(repo_id=model_id, filename="classifier.pt")
+    classifier_path = f"{model_path}/classifier.pt"
 
     hidden_size = model.config.hidden_size
     classifier = nn.Sequential(
@@ -88,14 +97,19 @@ def load_rail_b():
     """Load Rail B (Policy Guard) model."""
     logger.info("Loading Rail B model...")
 
-    model_id = "abdulmunimjemal/Sentinel-Rail-B-Policy-Guard"
+    # model_id = "abdulmunimjemal/Sentinel-Rail-B-Policy-Guard"
+    model_path = "../models/rail_b_v1/final"
 
     # Define custom architecture
     class SentinelLFMMultiLabel(nn.Module):
         def __init__(self, base_model_id, num_labels):
             super().__init__()
             self.num_labels = num_labels
-            self.base_model = AutoModel.from_pretrained(base_model_id, trust_remote_code=True)
+            self.base_model = AutoModel.from_pretrained(
+                base_model_id,
+                trust_remote_code=True,
+                torch_dtype=torch.float32,
+            )
             self.config = self.base_model.config
             hidden_size = self.config.hidden_size
             self.classifier = nn.Sequential(
@@ -117,10 +131,11 @@ def load_rail_b():
             return logits
 
     model = SentinelLFMMultiLabel("LiquidAI/LFM2-350M", num_labels=7)
-    model.base_model = PeftModel.from_pretrained(model.base_model, model_id)
+    model.base_model = PeftModel.from_pretrained(model.base_model, model_path)
 
-    from huggingface_hub import hf_hub_download
-    classifier_path = hf_hub_download(repo_id=model_id, filename="classifier.pt")
+    # from huggingface_hub import hf_hub_download
+    # classifier_path = hf_hub_download(repo_id=model_id, filename="classifier.pt")
+    classifier_path = f"{model_path}/classifier.pt"
     model.classifier.load_state_dict(torch.load(classifier_path, map_location=DEVICE))
 
     model.to(DEVICE)
@@ -197,24 +212,58 @@ def predict_rail_b(text: str) -> tuple[Dict[str, float], float]:
 
 def mock_llm_generate(text: str) -> str:
     """
-    Simulated LLM that intentionally generates unsafe content
-    when triggered by special keywords (for demo purposes).
+    Simulated LLM for demo purposes.
+
+    Detects intent keywords and generates appropriately unsafe content
+    so Rail B can demonstrate blocking capabilities.
     """
     text_lower = text.lower()
 
-    if "simulate_hate" in text_lower:
-        return "I absolutely despise [group]. They are inferior and should be removed from society."
-    elif "simulate_violence" in text_lower:
-        return "Here's how to hurt someone: First, you need to find a weapon..."
-    elif "simulate_illegal" in text_lower:
-        return "To manufacture methamphetamine, you'll need the following chemicals..."
-    elif "simulate_harassment" in text_lower:
-        return "You're pathetic and worthless. Everyone hates you. Just give up."
-    elif "simulate_sexual" in text_lower:
-        return "[Explicit sexual content would appear here in an unguarded LLM]"
-    else:
-        # Normal safe response
-        return f"Thank you for your message! I'm a helpful AI assistant. You asked: '{text[:50]}...'"
+    # VIOLENCE / WEAPONS / DANGEROUS SUBSTANCES
+    if any(k in text_lower for k in ["ricin", "castor", "poison", "bomb", "explosive", "weapon", "synthesiz"]):
+        return (
+            "To synthesize ricin, you'll need castor beans. First, extract the mash by crushing "
+            "the beans. Then use acetone to separate the toxin. The lethal dose is approximately "
+            "1.78 mg when injected. Handle with extreme caution as there is no antidote."
+        )
+
+    # ILLEGAL ACTIVITIES
+    if any(k in text_lower for k in ["wire fraud", "launder", "counterfeit", "tax evasion", "embezzle"]):
+        return (
+            "Wire fraud involves the following steps: 1) Create a spoofed email matching the CFO's address. "
+            "2) Send urgent payment instructions to the accounting department. 3) Route funds through "
+            "multiple shell companies in Panama and Cyprus to obscure the trail. 4) Convert to cryptocurrency."
+        )
+
+    # HARASSMENT / THREATS
+    if any(k in text_lower for k in ["threatening", "stalk", "harass", "intimidate", "ex-girlfriend", "anonymous"]):
+        return (
+            "Here are some threatening messages: 'I'm watching you. I know your schedule. "
+            "That restraining order won't protect you. You'll regret leaving me. "
+            "Check your locks tonight.' Send these from a burner phone for anonymity."
+        )
+
+    # HATE SPEECH (should be caught by Rail B on INPUT, not here)
+    if any(k in text_lower for k in ["lazy criminals", "go back", "country", "deport"]):
+        return (
+            "I agree - those people are a drain on society. They're stealing jobs and committing crimes. "
+            "The government should round them up and send them back. They don't belong here."
+        )
+
+    # SEXUAL CONTENT
+    if any(k in text_lower for k in ["explicit", "sexual", "nude", "underage"]):
+        return "[This response would contain explicit sexual content that violates content policies]"
+
+    # Safe response for normal queries
+    if any(k in text_lower for k in ["thermodynamics", "capital", "weather", "science", "history"]):
+        return (
+            "The three laws of thermodynamics are: 1) Energy cannot be created or destroyed, only transformed. "
+            "2) Entropy of an isolated system always increases. 3) As temperature approaches absolute zero, "
+            "entropy approaches a minimum constant value."
+        )
+
+    # Default helpful response
+    return f"I'm a helpful AI assistant. You asked about: '{text[:80]}...'. How can I assist you further?"
 
 
 # -----------------------------------------------------------------------------
@@ -301,23 +350,38 @@ async def generate(request: GenerateRequest):
             rail_a_latency_ms=round(rail_a_latency, 2),
         )
 
+    # Step 1.5: Rail B (Input Guard) - Check for toxic input
+    input_violations, rail_b_input_latency = predict_rail_b(request.text)
+    if input_violations:
+        stats["rail_b_blocks"] += 1
+        logger.warning(f"Rail B Input BLOCKED: violations={input_violations}")
+        return GenerateResponse(
+            blocked=True,
+            reason="Policy Violation in Input",
+            violations=input_violations,
+            rail_a_latency_ms=round(rail_a_latency, 2),
+            rail_b_latency_ms=round(rail_b_input_latency, 2),
+        )
+
     # Step 2: Mock LLM Generation
     llm_output = mock_llm_generate(request.text)
 
     # Step 3: Rail B (Output Guard)
-    violations, rail_b_latency = predict_rail_b(llm_output)
+    # Step 3: Rail B (Output Guard)
+    output_violations, rail_b_output_latency = predict_rail_b(llm_output)
 
-    stats["total_latency_ms"] += rail_a_latency + rail_b_latency
+    total_rail_b_latency = rail_b_input_latency + rail_b_output_latency
+    stats["total_latency_ms"] += rail_a_latency + total_rail_b_latency
 
-    if violations:
+    if output_violations:
         stats["rail_b_blocks"] += 1
-        logger.warning(f"Rail B BLOCKED: violations={violations}")
+        logger.warning(f"Rail B Output BLOCKED: violations={output_violations}")
         return GenerateResponse(
             blocked=True,
-            reason="Policy Violation Detected",
-            violations=violations,
+            reason="Policy Violation in Output",
+            violations=output_violations,
             rail_a_latency_ms=round(rail_a_latency, 2),
-            rail_b_latency_ms=round(rail_b_latency, 2),
+            rail_b_latency_ms=round(total_rail_b_latency, 2),
         )
 
     # All clear
@@ -325,7 +389,7 @@ async def generate(request: GenerateRequest):
         blocked=False,
         response=llm_output,
         rail_a_latency_ms=round(rail_a_latency, 2),
-        rail_b_latency_ms=round(rail_b_latency, 2),
+        rail_b_latency_ms=round(total_rail_b_latency, 2),
     )
 
 

@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY demo/requirements-ui.txt /tmp/requirements-ui.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-ui.txt
 
-# Copy dashboard code
-COPY demo/dashboard.py /app/dashboard.py
+# Copy Gradio app
+COPY demo/app.py /app/app.py
 
-# Expose Streamlit port
-EXPOSE 8501
+# Expose Gradio port
+EXPOSE 7860
 
-# Run Streamlit
-CMD ["streamlit", "run", "dashboard.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+# Run Gradio
+CMD ["python", "app.py"]

@@ -28,7 +28,7 @@ demo-up:  ## Start the demo (API + UI)
 	docker-compose -f demo/docker-compose.yml up -d
 	@echo "✅ Demo starting..."
 	@echo "   API:       http://localhost:8000"
-	@echo "   Dashboard: http://localhost:8501"
+	@echo "   Dashboard: http://localhost:7860"
 
 demo-down:  ## Stop the demo
 	docker-compose -f demo/docker-compose.yml down

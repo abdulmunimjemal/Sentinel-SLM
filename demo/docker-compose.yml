@@ -12,6 +12,7 @@ services:
       - HF_TOKEN=${HF_TOKEN:-}
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
+      - ../models:/app/models:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -24,7 +25,7 @@ services:
       context: ..
       dockerfile: demo/Dockerfile.ui
     ports:
-      - "8501:8501"
+      - "7860:7860"
     environment:
       - API_URL=http://api:8000
     depends_on:
