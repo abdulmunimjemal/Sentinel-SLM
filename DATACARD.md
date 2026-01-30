@@ -8,9 +8,27 @@ It features a "Dual-Rail" design:
 -   **Rail A (Input)**: Detection of Jailbreaks and Prompt Injections.
 -   **Rail B (Policy)**: Detection of Hate, Harassment, Sexual Content, Violence, etc.
 
-**Total Size:** 1,671,001 rows
+**Total Pool Size:** 1,671,001 rows
 **Languages:** 20+ (Balanced spread across En, Ru, Uk, Ja, Zh, De, Es, It, Fr)
-**License:** Aggregate (See Source Data licenses)
+
+### Rail-Specific Datasets
+The total pool is filtered and processed differently for each Rail:
+
+#### Rail A (Input Guard)
+- **Focus**: Prompt Injection & Jailbreaks
+- **Total Training Samples**: 7,782
+- **Composition**:
+  - **Attack (50%)**: 3,896 samples (JailbreakBench, Deepset, MultiJail, etc.)
+  - **Safe (50%)**: 3,886 samples (Dolly-15k, Alpaca)
+- **Source**: `data/processed/rail_a_clean.parquet`
+
+#### Rail B (Policy Guard)
+- **Focus**: Content Policy Violation (Hate, Violence, etc.)
+- **Total Training Samples**: 188,940
+- **Composition**:
+  - **Violations (50%)**: ~94k samples (Upsampled rare classes like Privacy/Illegal)
+  - **Safe (50%)**: ~94k samples (Matched subset from KoalaAI/CivilComments)
+- **Source**: `data/processed/rail_b_full.parquet`
 
 ---
 
@@ -94,6 +112,31 @@ This dataset is a harmonization of the following sources:
 
 ### Misuse
 -   This dataset contains high-toxicity and harmful examples. It should **NOT** be used to train generative models to *produce* such content, explicitly only for *detection*.
+
+---
+
+## Trained Models
+
+The following models have been trained on this dataset:
+
+### Rail A: Jailbreak Detector
+- **Model**: [abdulmunimjemal/sentinel-rail-a](https://huggingface.co/abdulmunimjemal/sentinel-rail-a)
+- **Base**: LiquidAI/LFM2-350M
+- **Task**: Binary classification (Jailbreak vs Safe)
+- **Accuracy**: 99.5%
+
+### Rail B: Policy Guard
+- **Model**: [abdulmunimjemal/Sentinel-Rail-B-Policy-Guard](https://huggingface.co/abdulmunimjemal/Sentinel-Rail-B-Policy-Guard)
+- **Base**: LiquidAI/LFM2-350M + LoRA
+- **Task**: 7-label multi-label classification
+- **Dataset Used**: Balanced subset (~189k samples, 50% Safe / 50% Violations)
+- **Balancing Strategy**: Rarest-label upsampling to ~15k per class
+- **Performance**:
+  | Metric | Score |
+  |--------|-------|
+  | F1 Micro | 0.7647 |
+  | F1 Macro | 0.7793 |
+  | Hamming Loss | 0.0466 |
 
 ---
 

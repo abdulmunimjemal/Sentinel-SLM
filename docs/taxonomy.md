@@ -19,10 +19,13 @@ Sentinel-SLM classifies content into the following 8 categories. This taxonomy m
 The final dataset (`data/processed/final_augmented_dataset.parquet`) follows this schema:
 
 - **text** (`string`): The input content to be moderated.
-- **labels** (`list[int]`): A list of category IDs (0-8) that apply to the text. Multi-label is supported.
+- **labels** (`list[int]`): A list of category IDs (0-8) that apply to the text.
+    - **Rail A (Input Guard)**: Binary Classification (Safe=0, Attack=1). Uses source datasets mapped to PromptAttack.
+    - **Rail B (Policy Guard)**: Multi-label Classification for Categories 1-7. (Category 8 is excluded).
     - Example: `[2, 5]` means Harassment AND Violence.
     - Example: `[0]` means Safe.
-- **source** (`string`): Origin of the sample (e.g., "beaver_tails", "synthetic_openrouter").
+- **source** (`string`): Origin of the sample (e.g., "civil_comments", "deepset_injection").
+- **lang** (`string`): Language code (e.g., "en", "es").
 
 ## Data Volume
 As of Data Prep Phase 1:
