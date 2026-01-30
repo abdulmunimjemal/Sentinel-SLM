@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Jemal"
+    given-names: "Abdulmunim"
+title: "Sentinel-SLM: Multilingual Content Moderation and Guardrails for LLM Deployments"
+version: 1.0.0
+date-released: 2025-01-30
+url: "https://github.com/abdulmunimjemal/Sentinel-SLM"
+keywords:
+  - llm-security
+  - guardrails
+  - content-moderation
+  - multilingual
+  - nlp
+license: MIT

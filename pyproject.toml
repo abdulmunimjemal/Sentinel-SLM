@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel-slm"
+version = "1.0.0"
+description = "Multilingual Content Moderation & Guardrails for LLMs"
+authors = [
+    {name = "Abdulmunim Jemal", email = "abdulmunim.jemal@example.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "peft>=0.5.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+exclude = [
+    ".venv",
+    "notebooks",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = ["E501"]  # Ignore line length violations
+
+[tool.isort]
+profile = "black"
+line_length = 100
