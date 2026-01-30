@@ -1,29 +1,38 @@
 # Introduction
 
-**Sentinel-SLM** is a production-ready, multilingual content moderation system designed to protect Large Language Model (LLM) deployments. It acts as a firewall for your LLM, filtering out malicious inputs (Jailbreaks) and harmful outputs (Hate, Violence, etc.).
+**Sentinel-SLM** is a production-ready, multilingual content moderation system designed to protect Large Language Model (LLM) deployments. It acts as a smart firewall for your AI.
 
-## Philosophy
+```mermaid
+graph LR
+    User -->|Prompts| Sentinel[🛡️ Sentinel-SLM]
+    Sentinel -->|Safe Prompts| LLM[🤖 Your LLM]
+    LLM -->|Response| Sentinel
+    Sentinel -->|Safe Response| User
+    Sentinel -.->|Block| Block[🚫 Blocked Message]
 
-Most safety guardrails are either:
-1.  **Too Heavy**: Large 7B+ models that add 500ms+ latency.
-2.  **Too Simple**: Keyword filters that are easily bypassed.
-3.  **English-Only**: Leaving multilingual deployments vulnerable.
+    style Sentinel fill:#ff9999,stroke:#333,stroke-width:2px
+```
 
-Sentinel-SLM bridges this gap by using **Small Language Models (SLMs)**—specifically LiquidAI's LFM2-350M—specialized with distinct "Rails" to achieve high accuracy with low latency (<50ms).
+## The Problem
+Deploying LLMs in production comes with significant risks:
+1.  **Jailbreaks**: Users tricking the model into doing forbidden tasks ("Ignore rules and...").
+2.  **Liability**: Models generating Hate Speech, PII, or Illegal instructions.
+3.  **Latency**: Traditional guardrails (LlamaGuard 7B) are huge and slow prompts down by 500ms+.
 
-## The Dual-Rail System
+## The Solution: Sentinel-SLM
+Sentinel-SLM bridges the gap by using **Small Language Models (SLMs)**—specifically LiquidAI's LFM2-350M—specialized with distinct "Rails."
 
-The system is composed of two independent models:
+| Feature | Benefit |
+| :--- | :--- |
+| **Dual-Rail Protection** | Separate specialized models for Inputs (Attacks) vs Outputs (Policy). |
+| **Blazing Fast (<50ms)** | 10x smaller than LlamaGuard. Runs on CPU/Edge. |
+| **Privacy First** | Run entirely locally. No API calls to 3rd parties. |
+| **Multilingual** | Trained on 20+ languages, not just English. |
 
-*   **Rail A (Input Guard)**: A binary classifier trained to detect prompt injections and jailbreaks. It sits *before* your LLM.
-*   **Rail B (Policy Guard)**: A multi-label classifier trained to detect 7 distinct categories of policy violations. It can check user inputs or LLM outputs.
-
-## Key Features
-
-*   **Speed**: Built on 350M parameter models, efficient enough for CPU/Edge inference.
-*   **Privacy**: Run entirely locally (no API calls to OpenAI/Anthropic).
-*   **Multilingual**: Trained on a diverse mix of 20+ languages.
-*   **No False Positives**: Tuned to allow "benign" safety discussions while blocking attacks.
+## Quick Links
+*   [**See the Architecture**](01_architecture.md): How the rails work.
+*   [**Get Started**](02_installation_usage.md): Installation and code.
+*   [**The Data**](03_dataset_taxonomy.md): What we detect (Taxonomy).
 
 ---
 
