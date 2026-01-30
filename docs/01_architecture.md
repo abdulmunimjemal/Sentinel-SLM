@@ -116,4 +116,4 @@ Sentinel-SLM uses **LiquidAI LFM2-350M** models.
 
 ---
 
-[← Previous: Introduction](00_introduction.md) | [Next: Installation & Usage →](02_installation_usage.md)
+[← Previous: Introduction](README.md) | [Next: Installation & Usage →](02_installation_usage.md)
