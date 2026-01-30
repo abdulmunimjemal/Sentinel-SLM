@@ -29,12 +29,12 @@ Sentinel-SLM sits between your user and your LLM. It acts as a bidirectional fir
 graph TD
     User([User Input]) --> RailA{Rail A<br/>Input Guard}
 
-    RailA -- Attack Detected --> Block1[Block Request<br/>Return 403]
-    RailA -- Safe --> LLM[Backbone LLM<br/>(e.g., Llama/GPT)]
+    RailA -- Attack Detected --> Block1["Block Request<br/>Return 403"]
+    RailA -- Safe --> LLM["Backbone LLM<br/>(e.g., Llama/GPT)"]
 
     LLM --> RailB{Rail B<br/>Policy Guard}
 
-    RailB -- Violation Detected --> Block2[Block Output<br/>Return Safety Message]
+    RailB -- Violation Detected --> Block2["Block Output<br/>Return Safety Message"]
     RailB -- Safe --> Response([Return Response])
 
     style RailA fill:#ff9999,stroke:#333,stroke-width:2px
